@@ -1,1 +1,3 @@
 rootProject.name = 'demo-websocket'
+
+include 'ws-client', 'ws-server', 'ws-models'
