@@ -5,6 +5,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.*;
 
+import javax.annotation.PreDestroy;
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -71,6 +73,17 @@ public class WsHandler implements WebSocketHandler {
             boolean remove = sessions.remove(id, session);
             log.warn("exception sending ping, remove session " + remove, e);
         }
+    }
+
+    @PreDestroy
+    private void stop() {
+        sessions.forEach((s, session) -> {
+            try {
+                session.close(CloseStatus.GOING_AWAY);
+            } catch (IOException e) {
+                log.warn("exception closing session", e);
+            }
+        });
     }
 
 }

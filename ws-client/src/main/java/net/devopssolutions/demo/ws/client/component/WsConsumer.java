@@ -3,11 +3,14 @@ package net.devopssolutions.demo.ws.client.component;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
+import org.glassfish.tyrus.core.CloseReasons;
 import org.glassfish.tyrus.ext.client.java8.SessionBuilder;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import javax.websocket.*;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
@@ -83,10 +86,22 @@ public class WsConsumer {
                 session.getBasicRemote().sendPing(ping);
             } catch (Exception e) {
                 this.session.set(null);
-                log.warn("exception sending ping {}", e);
+                log.warn("exception sending ping", e);
             }
         } else {
             connect();
+        }
+    }
+
+    @PreDestroy
+    private void stop() {
+        Session session = this.session.get();
+        if (session != null && session.isOpen()) {
+            try {
+                session.close(CloseReasons.GOING_AWAY.getCloseReason());
+            } catch (IOException e) {
+                log.warn("exception closing session", e);
+            }
         }
     }
 
