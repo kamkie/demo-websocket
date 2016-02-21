@@ -51,6 +51,7 @@ project(':ws-client') {
         compile("org.springframework.boot:spring-boot-starter")
         compile("org.springframework.boot:spring-boot-devtools")
         compile("org.springframework.boot:spring-boot-configuration-processor")
+        compile("com.fasterxml.jackson.core:jackson-databind")
         compile("org.glassfish.tyrus:tyrus-container-jdk-client:$tyrusVersion")
         compile("org.glassfish.tyrus.ext:tyrus-client-java8:$tyrusVersion")
     }
