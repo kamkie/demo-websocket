@@ -32,6 +32,8 @@ allprojects {
 
 subprojects {
     apply plugin: 'java'
+    apply plugin: 'pmd'
+    apply plugin: 'findbugs'
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
@@ -56,6 +58,7 @@ project(':ws-client') {
         compile("org.glassfish.tyrus.ext:tyrus-client-java8:$tyrusVersion")
     }
 }
+
 project(':ws-server') {
     apply plugin: 'spring-boot'
 
@@ -71,6 +74,3 @@ project(':ws-server') {
         compile("io.reactivex:rxjava:$rxJavaVersion")
     }
 }
-
-
-
