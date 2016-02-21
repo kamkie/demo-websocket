@@ -43,6 +43,10 @@ public class WsServer extends Endpoint {
                 .collect(Collectors.toSet());
     }
 
+    public Session getSession(String id) {
+        return sessions.get(id);
+    }
+
     public void onBinaryMessage(InputStream message, Session session) {
         log.info("onBinaryMessage id: {}, message: {}", session.getId(), message);
         Principal userPrincipal = session.getUserPrincipal();

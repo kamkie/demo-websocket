@@ -2,7 +2,6 @@ package net.devopssolutions.demo.ws.server.component;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.devopssolutions.demo.ws.rpc.RpcMessage;
 import net.devopssolutions.demo.ws.rpc.RpcMethod;
 import net.devopssolutions.demo.ws.rpc.RpcMethodHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,22 +18,22 @@ import java.util.stream.Collectors;
 public class RpcMethodDispatcher {
 
     @Getter
-    private final Map<String, RpcMethodHandler> handlerMap;
+    private Map<String, RpcMethodHandler> handlerMap;
 
     @Autowired
-    private RpcMethodDispatcher(List<RpcMethodHandler> handlers) {
+    private void init(List<RpcMethodHandler> handlers) {
         Function<RpcMethodHandler, String> keyMapper = rpcMethodHandler -> rpcMethodHandler.getClass().getAnnotation(RpcMethod.class).value();
         handlerMap = handlers.stream().collect(Collectors.toMap(keyMapper, rpcMethodHandler -> rpcMethodHandler));
     }
 
     @SuppressWarnings("unchecked")
-    public RpcMessage handle(String id, String method, Object params, Principal user) {
+    public void handle(String id, String method, Object params, Principal user) {
         RpcMethodHandler handler = handlerMap.get(method);
         if (handler == null) {
             log.warn("no handler for method: {} ", method);
-            return null;
+            return;
         }
 
-        return handler.handle(id, params, user);
+        handler.handle(id, params, user);
     }
 }

@@ -1,9 +1,7 @@
 package net.devopssolutions.demo.ws.client.component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.devopssolutions.demo.ws.rpc.RpcMessage;
-import net.devopssolutions.demo.ws.rpc.RpcMethods;
 import org.glassfish.tyrus.client.ClientManager;
 import org.glassfish.tyrus.container.jdk.client.JdkClientContainer;
 import org.glassfish.tyrus.core.CloseReasons;
@@ -14,12 +12,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import javax.websocket.*;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.zip.GZIPOutputStream;
 
 @Slf4j
 @Component
@@ -40,10 +35,9 @@ public class WsConsumer {
             .onError(this::onError)
             .onClose(this::onClose);
 
+    @Getter
     private final AtomicReference<Session> session = new AtomicReference<>();
     private final ByteBuffer ping = ByteBuffer.allocate(0);
-
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     public WsConsumer() throws Exception {
         log.info("going to open ws connection");
@@ -92,31 +86,12 @@ public class WsConsumer {
         if (session != null) {
             try {
                 session.getBasicRemote().sendPing(ping);
-                RpcMessage<Object, Object> message = RpcMessage.builder()
-                        .id(UUID.randomUUID().toString())
-                        .method(RpcMethods.HELLO)
-                        .params("word")
-                        .build();
-                sendMessage(session, message);
             } catch (Exception e) {
                 this.session.set(null);
                 log.warn("exception sending ping", e);
             }
         } else {
             connect();
-        }
-    }
-
-    private void sendMessage(Session session, RpcMessage<Object, Object> message) throws IOException {
-        OutputStream sendStream = null;
-        try {
-            sendStream = session.getBasicRemote().getSendStream();
-            objectMapper.writeValue(new GZIPOutputStream(sendStream), message);
-        } catch (IOException e) {
-            if (sendStream != null) {
-                sendStream.close();
-            }
-            throw e;
         }
     }
 

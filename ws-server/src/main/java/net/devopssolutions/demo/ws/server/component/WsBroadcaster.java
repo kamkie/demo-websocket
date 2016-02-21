@@ -19,13 +19,35 @@ public class WsBroadcaster {
     @Autowired
     private WsServer wsServer;
 
-    public void broadcast(Consumer<Session> action) {
+    public void broadcastAsync(Consumer<Session> action) {
         wsServer.getAllSessions().forEach(session -> {
-            try {
-                action.accept(session);
-            } catch (Throwable throwable) {
-                log.warn("exception broadcasting message to session: " + session, throwable);
-            }
+            sendersExecutor.execute(() -> {
+                try {
+                    action.accept(session);
+                } catch (Throwable throwable) {
+                    log.warn("exception broadcasting message to session: " + session, throwable);
+                }
+            });
         });
     }
+
+    public void sendToId(String sessionId, Consumer<Session> action) {
+        Session session = wsServer.getSession(sessionId);
+        if (session == null) {
+            log.warn("session with id {} not founded", sessionId);
+            return;
+        }
+        try {
+            action.accept(session);
+        } catch (Throwable throwable) {
+            log.warn("exception sending message to session: " + session, throwable);
+        }
+    }
+
+    public void sendToIdAsync(String sessionId, Consumer<Session> action) {
+        sendersExecutor.execute(() -> sendToId(sessionId, action));
+    }
+
+
+
 }
