@@ -46,9 +46,9 @@ public class FloodHandler implements RpcMethodHandler {
                 .forEach(byteBuffer -> sessions.forEach(session -> {
                     synchronized (session) {
                         try {
-                            session.getBasicRemote().getSendStream();
+                            session.getBasicRemote().sendBinary(byteBuffer);
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            log.warn("exception sending data: session: " + session, e);
                         }
                     }
                 }));
