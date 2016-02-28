@@ -4,16 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import net.devopssolutions.demo.ws.rpc.RpcMessage
 import net.devopssolutions.demo.ws.rpc.RpcMethods
 import net.devopssolutions.demo.ws.rpc.RpcType
-import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-
-import javax.websocket.Session
-import java.io.IOException
-import java.io.OutputStream
-import java.util.UUID
+import java.util.*
 import java.util.zip.GZIPOutputStream
+import javax.websocket.Session
 
 @Component
 class WsProducer {
@@ -29,7 +25,7 @@ class WsProducer {
         log.info("sending hello: {}", session != null)
         session?.apply {
             try {
-                val message = RpcMessage.builder<Any, Any>()
+                val message = RpcMessage.builder()
                         .id(UUID.randomUUID().toString())
                         .method(RpcMethods.HELLO)
                         .type(RpcType.REQUEST)
@@ -48,7 +44,7 @@ class WsProducer {
         log.info("sending hello: {}", session != null)
         session?.apply {
             try {
-                val message = RpcMessage.builder<Any, Any>()
+                val message = RpcMessage.builder()
                         .id(UUID.randomUUID().toString())
                         .method(RpcMethods.FLOOD)
                         .type(RpcType.REQUEST)

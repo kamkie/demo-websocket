@@ -4,26 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.IntNode
 import net.devopssolutions.demo.ws.rpc.*
 import net.devopssolutions.demo.ws.server.component.WsBroadcaster
-import net.devopssolutions.demo.ws.server.component.WsServer
-import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import rx.Observable
-import rx.functions.Func1
-import rx.functions.Func2
-import rx.util.async.Async
-
-import javax.websocket.Session
 import java.io.ByteArrayOutputStream
-import java.io.IOException
 import java.nio.ByteBuffer
 import java.security.Principal
 import java.time.LocalDateTime
 import java.time.ZoneOffset
-import java.util.*
 import java.util.function.Consumer
-import java.util.stream.Collectors
-import java.util.stream.Stream
 import java.util.zip.GZIPOutputStream
 
 @Component
@@ -59,7 +48,7 @@ class FloodHandler : RpcMethodHandler {
         return ByteBuffer.wrap(byteArrayOutputStream.toByteArray())
     }
 
-    private fun createRpcMessage(id: String, response: Any): RpcMessage<*, *> = RpcMessage.builder<Any, Any>()
+    private fun createRpcMessage(id: String, response: Any): RpcMessage<*, *> = RpcMessage.builder()
             .id(id)
             .method(RpcMethods.FLOOD)
             .type(RpcType.RESPONSE)

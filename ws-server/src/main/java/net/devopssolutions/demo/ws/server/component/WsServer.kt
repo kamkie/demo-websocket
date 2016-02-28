@@ -43,7 +43,7 @@ class WsServer : Endpoint() {
         log.info("onBinaryMessage id: {}, message: {}", session.id, message)
         val userPrincipal = when {
             session.userPrincipal != null -> session.userPrincipal
-            else -> User()
+            else -> User("anonymous")
         }
 
         try {
