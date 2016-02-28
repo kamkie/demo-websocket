@@ -41,15 +41,10 @@ class WsServer : Endpoint() {
 
     fun onBinaryMessage(message: InputStream, session: Session) {
         log.info("onBinaryMessage id: {}, message: {}", session.id, message)
-        val userPrincipal = when {
-            session.userPrincipal != null -> session.userPrincipal
-            else -> User("anonymous")
-        }
-
         try {
             GZIPInputStream(message).use { inputStream ->
                 val node = objectMapper.readTree(inputStream)
-                handlersExecutor.execute { dispatchMessage(node, userPrincipal) }
+                handlersExecutor.execute { dispatchMessage(node, session.userPrincipal) }
             }
         } catch (e: Exception) {
             log.warn("exception handling ws message session: " + session.id, e)
@@ -68,11 +63,11 @@ class WsServer : Endpoint() {
         }
     }
 
-    private fun dispatchMessage(node: JsonNode, principal: Principal) {
+    private fun dispatchMessage(node: JsonNode, principal: Principal?) {
         val id = node.get("id").asText()
         val method = node.get("method").asText()
         val params = node.get("params")
-        rpcMethodDispatcher.handle(id, method, params, principal)
+        rpcMethodDispatcher.handle(id, method, params, principal ?: User("anonymous"))
     }
 
     fun onPong(message: PongMessage, session: Session) {
