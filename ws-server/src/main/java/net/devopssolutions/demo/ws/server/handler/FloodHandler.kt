@@ -12,7 +12,6 @@ import java.security.Principal
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
-import java.util.stream.IntStream
 import java.util.zip.GZIPOutputStream
 
 @Component
@@ -29,13 +28,13 @@ class FloodHandler : RpcMethodHandler {
     override fun handle(id: String, params: Any, user: Principal) {
         log.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
 
-        IntStream.range(0, (params as IntNode).intValue())
-                .parallel()
-                .mapToObj { createRpcMessage(id, 20) }
-                .map { getByteBuffer(it) }
-                .forEach {
-                    wsBroadcaster.broadcastQueue(it)
-                }
+        (0..(params as IntNode).intValue()).forEach {
+            wsBroadcaster.broadcastAsync {
+                val rpcMessage = createRpcMessage(id, 20)
+                val byteBuffer = getByteBuffer(rpcMessage)
+                byteBuffer
+            }
+        }
     }
 
     private fun getByteBuffer(value: RpcMessage<*, *>): ByteBuffer {
