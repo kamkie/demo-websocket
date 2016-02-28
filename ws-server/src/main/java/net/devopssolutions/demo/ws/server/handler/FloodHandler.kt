@@ -3,12 +3,15 @@ package net.devopssolutions.demo.ws.server.handler
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.IntNode
 import net.devopssolutions.demo.ws.rpc.*
+import net.devopssolutions.demo.ws.server.component.WsBroadcaster
 import net.devopssolutions.demo.ws.server.component.WsServer
 import org.slf4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import rx.Observable
 import rx.functions.Func1
+import rx.functions.Func2
+import rx.util.async.Async
 
 import javax.websocket.Session
 import java.io.ByteArrayOutputStream
@@ -17,7 +20,10 @@ import java.nio.ByteBuffer
 import java.security.Principal
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import java.util.*
+import java.util.function.Consumer
 import java.util.stream.Collectors
+import java.util.stream.Stream
 import java.util.zip.GZIPOutputStream
 
 @Component
@@ -26,27 +32,24 @@ class FloodHandler : RpcMethodHandler {
     private val log = org.slf4j.LoggerFactory.getLogger(FloodHandler::class.java)
 
     @Autowired
-    private lateinit var wsServer: WsServer
+    private lateinit var objectMapper: ObjectMapper
 
     @Autowired
-    private lateinit var objectMapper: ObjectMapper
+    private lateinit var wsBroadcaster: WsBroadcaster
 
     override fun handle(id: String, params: Any, user: Principal) {
         log.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
 
-        val sessions = wsServer.allSessions
-
         Observable.range(0, (params as IntNode).intValue())
                 .map { createRpcMessage(id, it) }
                 .map { getByteBuffer(it) }
-                .onErrorReturn { null }
-                .filter { it != null }
+                .doOnError { log.warn("exception in flood handler", it) }
                 .forEach {
-                    sessions.forEach { session ->
+                    wsBroadcaster.broadcastAsync(Consumer { session ->
                         synchronized (session) {
                             session.basicRemote.sendBinary(it)
                         }
-                    }
+                    })
                 }
     }
 
