@@ -14,7 +14,7 @@ class WsBroadcaster {
     private val log = org.slf4j.LoggerFactory.getLogger(WsBroadcaster::class.java)
 
     private val sendersExecutor = LoggingThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(10000))
-    private val messagesQueue = ArrayBlockingQueue<ByteBuffer>(Int.MAX_VALUE / 4);
+    private val messagesQueue = ArrayBlockingQueue<ByteBuffer>(100000);
 
     @Autowired
     private lateinit var wsServer: WsServer

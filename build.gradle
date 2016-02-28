@@ -81,6 +81,7 @@ project(':ws-server') {
 //        compile("org.springframework.boot:spring-boot-devtools")
         compile("org.springframework.boot:spring-boot-configuration-processor")
 
-        compile("io.reactivex:rxjava:$rxJavaVersion")
+//        compile("io.reactivex:rxjava:$rxJavaVersion")
+//        compile('io.reactivex:rxjava-async-util:0.21.0')
     }
 }
