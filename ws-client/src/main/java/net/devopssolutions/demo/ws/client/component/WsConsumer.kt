@@ -21,6 +21,8 @@ class WsConsumer {
     private val sessionBuilder = createSessionBuilder()
     private val ping = ByteBuffer.allocate(0)
     private val messagesCount = AtomicLong(0)
+    private val messagesCountInSecond = AtomicLong(0)
+    private val messagesCountInLastSecond = AtomicLong(0)
 
     val session = AtomicReference<Session>()
 
@@ -55,17 +57,19 @@ class WsConsumer {
 
     private fun onMessage(message: ByteBuffer) {
         val count = messagesCount.incrementAndGet()
-        if (count % 1000 == 0L) {
-            log.info("new message: {}", message)
+        messagesCountInSecond.incrementAndGet()
+        if (count % 50000 == 0L) {
+            log.info("onBinaryMessage count: {}, messagesCountInSecond: {}, message: {}", count, messagesCountInLastSecond.get(), message)
         }
     }
 
     private fun onMessage(message: String) {
-        log.info("new message: {}", message)
+        log.info("onTextMessage message: {}", message)
     }
 
     private fun onOpen(session: Session, endpointConfig: EndpointConfig) {
         log.info("opened ws connection session: {}, endpointConfig: {}", session, endpointConfig)
+        messagesCount.set(0)
     }
 
     private fun onClose(session: Session, closeReason: CloseReason) {
@@ -74,6 +78,12 @@ class WsConsumer {
 
     private fun onError(session: Session, throwable: Throwable) {
         log.warn("error in ws session: " + session, throwable)
+    }
+
+    @Scheduled(fixedRate = 1000)
+    private fun countMessages() {
+        val count = messagesCountInSecond.getAndSet(0)
+        messagesCountInLastSecond.set(count)
     }
 
     @Scheduled(fixedRate = 10000)
