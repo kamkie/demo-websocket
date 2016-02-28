@@ -48,12 +48,11 @@ class FloodHandler : RpcMethodHandler {
         return ByteBuffer.wrap(byteArrayOutputStream.toByteArray())
     }
 
-    private fun createRpcMessage(id: String, response: Any): RpcMessage<*, *> = RpcMessage.builder()
-            .id(id)
-            .method(RpcMethods.FLOOD)
-            .type(RpcType.RESPONSE)
-            .created(LocalDateTime.now(ZoneOffset.UTC))
-            .response(response)
-            .build()
+    private fun createRpcMessage(id: String, response: Any): RpcMessage<Unit, Any> = RpcMessage(
+            id = id,
+            created = LocalDateTime.now(ZoneOffset.UTC),
+            method = RpcMethods.FLOOD,
+            type = RpcType.RESPONSE,
+            response = response)
 
 }

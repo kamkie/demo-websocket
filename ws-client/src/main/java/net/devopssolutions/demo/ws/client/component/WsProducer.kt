@@ -27,13 +27,12 @@ class WsProducer {
         log.info("sending hello: {}", session != null)
         session?.apply {
             try {
-                val message = RpcMessage.builder()
-                        .id(UUID.randomUUID().toString())
-                        .method(RpcMethods.HELLO)
-                        .type(RpcType.REQUEST)
-                        .created(LocalDateTime.now(ZoneOffset.UTC))
-                        .params("word")
-                        .build()
+                val message = RpcMessage<String, Unit>(
+                        id = UUID.randomUUID().toString(),
+                        created = LocalDateTime.now(ZoneOffset.UTC),
+                        method = RpcMethods.HELLO,
+                        type = RpcType.REQUEST,
+                        params = "word")
                 sendMessage(session, message)
             } catch (e: Exception) {
                 log.warn("exception sending hello", e)
@@ -47,13 +46,12 @@ class WsProducer {
         log.info("sending hello: {}", session != null)
         session?.apply {
             try {
-                val message = RpcMessage.builder()
-                        .id(UUID.randomUUID().toString())
-                        .method(RpcMethods.FLOOD)
-                        .type(RpcType.REQUEST)
-                        .created(LocalDateTime.now(ZoneOffset.UTC))
-                        .params(1000000)
-                        .build()
+                val message = RpcMessage<Int, Unit>(
+                        id = UUID.randomUUID().toString(),
+                        created = LocalDateTime.now(ZoneOffset.UTC),
+                        method = RpcMethods.FLOOD,
+                        type = RpcType.REQUEST,
+                        params = 1000000)
                 sendMessage(session, message)
             } catch (e: Exception) {
                 log.warn("exception sending hello", e)
@@ -61,7 +59,7 @@ class WsProducer {
         }
     }
 
-    private fun sendMessage(session: Session, message: RpcMessage<*, *>) {
+    private fun sendMessage(session: Session, message: RpcMessage<*, Unit>) {
         var sendStream = session.basicRemote.sendStream
         objectMapper.writeValue(GZIPOutputStream(sendStream), message)
     }
