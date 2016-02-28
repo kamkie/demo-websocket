@@ -11,7 +11,7 @@ import java.security.Principal
 class HelloWordHandler : RpcMethodHandler {
     private val log = org.slf4j.LoggerFactory.getLogger(HelloWordHandler::class.java)
 
-    override fun handle(id: String, params: Any, user: Principal) {
+    override fun handle(sessionId: String, id: String, params: Any, user: Principal) {
         log.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.HELLO, params)
     }
 }

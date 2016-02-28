@@ -22,10 +22,10 @@ class RpcMethodDispatcher {
     }
 
     @SuppressWarnings("unchecked")
-    fun handle(id: String, method: String, params: Any, user: Principal) {
+    fun handle(sessionId: String, id: String, method: String, params: Any, user: Principal) {
         val rpcMethodHandler = handlerMap[method]
         if (rpcMethodHandler != null) {
-            rpcMethodHandler.handle(id, params, user)
+            rpcMethodHandler.handle(sessionId, id, params, user)
         } else {
             log.warn("no handler for method: {} ", method)
         }

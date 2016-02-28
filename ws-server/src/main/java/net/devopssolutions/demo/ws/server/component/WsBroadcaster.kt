@@ -8,14 +8,13 @@ import java.security.Principal
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import javax.annotation.PostConstruct
-import javax.websocket.Session
 
 @Component
 class WsBroadcaster {
     private val log = org.slf4j.LoggerFactory.getLogger(WsBroadcaster::class.java)
 
     private val sendersExecutor = LoggingThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(10000))
-    private val messagesQueue = ArrayBlockingQueue<Pair<Session, ByteBuffer>>(100000);
+    private val messagesQueue = ArrayBlockingQueue<Pair<String, ByteBuffer>>(100000);
 
     @Autowired
     private lateinit var wsServer: WsServer
@@ -26,7 +25,9 @@ class WsBroadcaster {
             while (true) {
                 try {
                     val task = messagesQueue.take()
-                    task.first.basicRemote.sendBinary(task.second)
+                    wsServer.getSession(task.first)?.apply {
+                        this.basicRemote.sendBinary(task.second)
+                    }
                 } catch (e: Exception) {
                     log.warn("exception broadcasting message", e)
                 }
@@ -38,7 +39,7 @@ class WsBroadcaster {
         sendersExecutor.execute {
             val payload = action()
             wsServer.getAllSessions().forEach {
-                val task = it.to(payload)
+                val task = it.id.to(payload)
                 messagesQueue.put(task)
             }
         }
@@ -48,7 +49,7 @@ class WsBroadcaster {
         wsServer.getAllSessions().forEach {
             sendersExecutor.execute {
                 val payload = action(it.userPrincipal)
-                val task = it.to(payload)
+                val task = it.id.to(payload)
                 messagesQueue.put(task)
             }
         }
@@ -61,15 +62,8 @@ class WsBroadcaster {
         }
         sendersExecutor.execute {
             val payload = action()
-            val session = wsServer.getSession(sessionId)
-            if (session != null) {
-                val task = session.to(payload)
-                messagesQueue.put(task)
-            } else {
-                log.warn("session become invalid")
-            }
+            val task = sessionId.to(payload)
+            messagesQueue.put(task)
         }
     }
-
 }
-

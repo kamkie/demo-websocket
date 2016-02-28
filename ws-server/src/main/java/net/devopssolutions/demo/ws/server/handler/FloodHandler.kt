@@ -25,11 +25,11 @@ class FloodHandler : RpcMethodHandler {
     @Autowired
     private lateinit var wsBroadcaster: WsBroadcaster
 
-    override fun handle(id: String, params: Any, user: Principal) {
+    override fun handle(sessionId: String, id: String, params: Any, user: Principal) {
         log.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
 
         (0..(params as IntNode).intValue()).forEach {
-            wsBroadcaster.broadcastAsync {
+            wsBroadcaster.sendToIdAsync(sessionId) {
                 val rpcMessage = createRpcMessage(id, 20)
                 val byteBuffer = getByteBuffer(rpcMessage)
                 byteBuffer
