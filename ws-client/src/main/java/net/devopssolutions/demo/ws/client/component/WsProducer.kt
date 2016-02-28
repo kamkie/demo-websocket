@@ -7,6 +7,8 @@ import net.devopssolutions.demo.ws.rpc.RpcType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.*
 import java.util.zip.GZIPOutputStream
 import javax.websocket.Session
@@ -29,6 +31,7 @@ class WsProducer {
                         .id(UUID.randomUUID().toString())
                         .method(RpcMethods.HELLO)
                         .type(RpcType.REQUEST)
+                        .created(LocalDateTime.now(ZoneOffset.UTC))
                         .params("word")
                         .build()
                 sendMessage(session, message)
@@ -48,6 +51,7 @@ class WsProducer {
                         .id(UUID.randomUUID().toString())
                         .method(RpcMethods.FLOOD)
                         .type(RpcType.REQUEST)
+                        .created(LocalDateTime.now(ZoneOffset.UTC))
                         .params(1000000)
                         .build()
                 sendMessage(session, message)
