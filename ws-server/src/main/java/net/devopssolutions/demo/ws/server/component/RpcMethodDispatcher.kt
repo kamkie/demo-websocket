@@ -23,8 +23,11 @@ class RpcMethodDispatcher {
 
     @SuppressWarnings("unchecked")
     fun handle(id: String, method: String, params: Any, user: Principal) {
-        handlerMap[method]?.apply {
-            handle(id, params, user)
-        } ?: log.warn("no handler for method: {} ", method)
+        val rpcMethodHandler = handlerMap[method]
+        if (rpcMethodHandler != null) {
+            rpcMethodHandler.handle(id, params, user)
+        } else {
+            log.warn("no handler for method: {} ", method)
+        }
     }
 }

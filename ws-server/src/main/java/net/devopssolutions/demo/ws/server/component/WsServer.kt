@@ -12,6 +12,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.security.Principal
+import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -32,8 +33,7 @@ class WsServer : Endpoint() {
     @Autowired
     private lateinit var rpcMethodDispatcher: RpcMethodDispatcher
 
-    val allSessions: Set<Session>
-        get() = this.sessions.values.map({ it.openSessions }).flatten().toSet()
+    fun getAllSessions(): Collection<Session> = sessions.flatMapTo(HashSet(), { it.value.openSessions })
 
     fun getSession(id: String): Session? {
         return sessions[id]
@@ -42,10 +42,8 @@ class WsServer : Endpoint() {
     fun onBinaryMessage(message: InputStream, session: Session) {
         log.info("onBinaryMessage id: {}, message: {}", session.id, message)
         try {
-            GZIPInputStream(message).use { inputStream ->
-                val node = objectMapper.readTree(inputStream)
-                handlersExecutor.execute { dispatchMessage(node, session.userPrincipal) }
-            }
+            val node = objectMapper.readTree(GZIPInputStream(message))
+            handlersExecutor.execute { dispatchMessage(node, session.userPrincipal) }
         } catch (e: Exception) {
             log.warn("exception handling ws message session: " + session.id, e)
         }
@@ -100,13 +98,12 @@ class WsServer : Endpoint() {
         } catch (e: IOException) {
             log.warn("exception closing session id: " + session.id, e)
         }
-
     }
 
     @Scheduled(fixedRate = 10000)
     fun sendPings() {
         log.info("sending pings: {}", sessions.size)
-        allSessions.forEach { this.sendPing(it) }
+        getAllSessions().forEach { this.sendPing(it) }
     }
 
     private fun sendPing(session: Session) {
@@ -117,7 +114,6 @@ class WsServer : Endpoint() {
             val remove = sessions.remove(session.id, session)
             log.warn("exception sending ping, remove session " + remove, e)
         }
-
     }
 
 }

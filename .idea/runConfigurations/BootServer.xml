@@ -2,6 +2,7 @@
   <configuration default="false" name="BootServer" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="net.devopssolutions.demo.ws.server.BootServer" />
+    <option name="VM_PARAMETERS" value="-Xmx6g -Xms6g -XX:MetaspaceSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:G1HeapRegionSize=16M -XX:MinMetaspaceFreeRatio=50 -XX:MaxMetaspaceFreeRatio=80" />
     <option name="ALTERNATIVE_JRE_PATH" />
     <module name="ws-server_main" />
     <envs />

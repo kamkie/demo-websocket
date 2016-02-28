@@ -22,7 +22,6 @@ class WsConsumer {
     private val ping = ByteBuffer.allocate(0)
     private val messagesCount = AtomicLong(0)
     private val messagesCountInSecond = AtomicLong(0)
-    private val messagesCountInLastSecond = AtomicLong(0)
 
     val session = AtomicReference<Session>()
 
@@ -58,8 +57,8 @@ class WsConsumer {
     private fun onMessage(message: ByteBuffer) {
         val count = messagesCount.incrementAndGet()
         messagesCountInSecond.incrementAndGet()
-        if (count % 50000 == 0L) {
-            log.info("onBinaryMessage count: {}, messagesCountInSecond: {}, message: {}", count, messagesCountInLastSecond.get(), message)
+        if (count % 50000 == 1L) {
+            log.info("onBinaryMessage count: {}, message: {}", count, message)
         }
     }
 
@@ -83,7 +82,7 @@ class WsConsumer {
     @Scheduled(fixedRate = 1000)
     private fun countMessages() {
         val count = messagesCountInSecond.getAndSet(0)
-        messagesCountInLastSecond.set(count)
+        log.info("messagesCountInSecond: {}", count)
     }
 
     @Scheduled(fixedRate = 10000)

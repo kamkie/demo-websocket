@@ -9,7 +9,7 @@ def getVersionName = { ->
 
 buildscript {
     ext {
-        springBootVersion = '1.3.2.RELEASE'
+        springBootVersion = '1.3.3.RELEASE'
         tyrusVersion = '1.12'
         rxJavaVersion = '1.1.1'
         kotlinVersion = '1.0.0'
@@ -66,10 +66,16 @@ project(':ws-client') {
 project(':ws-server') {
     apply plugin: 'spring-boot'
 
+//    configurations {
+//        compile.exclude module: "spring-boot-starter-tomcat"
+//    }
+
     dependencies {
         compile project(':ws-models')
 
         compile("org.springframework.boot:spring-boot-starter-web")
+//        compile("org.springframework.boot:spring-boot-starter-jetty")
+//        compile("org.springframework.boot:spring-boot-starter-undertow")
         compile("org.springframework.boot:spring-boot-starter-websocket")
         compile("org.springframework.boot:spring-boot-actuator")
 //        compile("org.springframework.boot:spring-boot-devtools")
