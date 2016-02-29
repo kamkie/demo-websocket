@@ -23,11 +23,7 @@ class WsBroadcaster {
             val payload = action()
             wsServer.getAllSessions().forEach {
                 sendersExecutor.execute {
-                    wsServer.getSession(it.id)?.apply {
-                        synchronized(this) {
-                            this.basicRemote.sendBinary(payload)
-                        }
-                    }
+                    sendPayload(it.id, payload)
                 }
             }
         }
@@ -37,11 +33,7 @@ class WsBroadcaster {
         wsServer.getAllSessions().forEach {
             sendersExecutor.execute {
                 val payload = action(it.userPrincipal)
-                wsServer.getSession(it.id)?.apply {
-                    synchronized(this) {
-                        this.basicRemote.sendBinary(payload)
-                    }
-                }
+                sendPayload(it.id, payload)
             }
         }
     }
@@ -52,10 +44,15 @@ class WsBroadcaster {
         }
         sendersExecutor.execute {
             val payload = action()
-            val task = sessionId.to(payload)
-            wsServer.getSession(task.first)?.apply {
-                synchronized(this) {
-                    this.basicRemote.sendBinary(task.second)
+            sendPayload(sessionId, payload)
+        }
+    }
+
+    private fun sendPayload(sessionId: String, payload: ByteBuffer) {
+        wsServer.getSession(sessionId)?.apply {
+            synchronized(this) {
+                if (this.isOpen) {
+                    this.basicRemote.sendBinary(payload)
                 }
             }
         }
