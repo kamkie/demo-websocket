@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.IntNode
 import net.devopssolutions.demo.ws.rpc.*
 import net.devopssolutions.demo.ws.server.component.WsBroadcaster
 import net.jpountz.lz4.LZ4Factory
+import org.nustaq.serialization.FSTConfiguration
 import org.springframework.stereotype.Component
 import java.nio.ByteBuffer
 import java.security.Principal
@@ -19,6 +20,7 @@ open class FloodHandler(private val wsBroadcaster: WsBroadcaster,
     private val log = org.slf4j.LoggerFactory.getLogger(FloodHandler::class.java)
 
     private val compressorLZ4Factory = LZ4Factory.fastestInstance()
+    private val serializationConfig = FSTConfiguration.createDefaultConfiguration()
 
     override fun handle(sessionId: String, id: String, params: Any, user: Principal) {
         log.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
@@ -45,12 +47,16 @@ open class FloodHandler(private val wsBroadcaster: WsBroadcaster,
 //        objectMapper.writeValue(DeflaterOutputStream(byteArrayOutputStream), value)
 //        return ByteBuffer.wrap(byteArrayOutputStream.toByteArray())
 
-        val payload = objectMapper.writeValueAsBytes(value)
+//        val payload = objectMapper.writeValueAsBytes(value)
+        val payload = serializationConfig.asByteArray(value)
         val compressor = compressorLZ4Factory.fastCompressor()
         val maxCompressedLength = compressor.maxCompressedLength(payload.size)
         val compressed = ByteArray(maxCompressedLength)
         val compressedLength = compressor.compress(payload, 0, payload.size, compressed, 0, maxCompressedLength)
         return ByteBuffer.wrap(compressed, 0, compressedLength)
+
+//        val payload = serializationConfig.asByteArray(value)
+//        return ByteBuffer.wrap(payload)
     }
 
     private fun createRpcMessage(id: String, size: Int): RpcMessage<Unit, Any> = RpcMessage(

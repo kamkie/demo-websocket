@@ -1,5 +1,6 @@
 package net.devopssolutions.demo.ws.rpc
 
+import java.io.Serializable
 import java.time.LocalDateTime
 
 data class RpcMessage<I, O>(
@@ -9,5 +10,5 @@ data class RpcMessage<I, O>(
         val params: I? = null,
         val response: O? = null,
         val rpcError: RpcError? = null,
-        val type: RpcType) {
+        val type: RpcType) : Serializable {
 }
