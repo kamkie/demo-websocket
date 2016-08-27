@@ -7,14 +7,14 @@ import net.devopssolutions.demo.ws.rpc.RpcType
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.web.socket.adapter.NativeWebSocketSession
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
 import java.util.zip.GZIPOutputStream
-import javax.websocket.Session
 
 @Component
-class WsProducer {
+open class WsProducer {
     private val log = org.slf4j.LoggerFactory.getLogger(WsProducer::class.java)
     private val objectMapper = ObjectMapper()
 
@@ -23,7 +23,7 @@ class WsProducer {
 
     @Scheduled(fixedRate = 10000)
     private fun sendHello() {
-        val session = wsConsumer.session.get()
+        val session = wsConsumer.sessionReference.get()
         log.info("sending hello: {}", session != null)
         session?.apply {
             try {
@@ -42,8 +42,8 @@ class WsProducer {
 
     @Scheduled(fixedRate = 30000, initialDelay = 10000)
     private fun sendFlood() {
-        val session = wsConsumer.session.get()
-        log.info("sending hello: {}", session != null)
+        val session = wsConsumer.sessionReference.get()
+        log.info("sending flood: {}", session != null)
         session?.apply {
             try {
                 val message = RpcMessage<Int, Unit>(
@@ -59,8 +59,8 @@ class WsProducer {
         }
     }
 
-    private fun sendMessage(session: Session, message: RpcMessage<*, Unit>) {
-        val sendStream = session.basicRemote.sendStream
+    private fun sendMessage(session: NativeWebSocketSession, message: RpcMessage<*, Unit>) {
+        val sendStream = (session.nativeSession as javax.websocket.Session).basicRemote.sendStream
         objectMapper.writeValue(GZIPOutputStream(sendStream), message)
     }
 

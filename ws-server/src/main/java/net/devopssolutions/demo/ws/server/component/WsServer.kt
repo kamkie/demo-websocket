@@ -25,7 +25,7 @@ open class WsServer : Endpoint() {
 
     private val ping = ByteBuffer.allocate(0)
     private val sessions = ConcurrentHashMap<String, Session>()
-    private val handlersExecutor = LoggingThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(10000))
+    private val handlersExecutor = LoggingThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(200))
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
@@ -81,6 +81,9 @@ open class WsServer : Endpoint() {
         session.addMessageHandler(PongMessage::class.java) { message -> onPong(message, session) }
         session.addMessageHandler(String::class.java) { message -> onTextMessage(message, session) }
         session.addMessageHandler(InputStream::class.java) { message -> onBinaryMessage(message, session) }
+//        session.addMessageHandler(MessageHandler.Whole<PongMessage> { message -> onPong(message, session)  })
+//        session.addMessageHandler(MessageHandler.Whole<String> { message -> onTextMessage(message, session) })
+//        session.addMessageHandler(MessageHandler.Whole<InputStream> { message -> onBinaryMessage(message, session) })
 
         sessions.put(session.id, session)
     }

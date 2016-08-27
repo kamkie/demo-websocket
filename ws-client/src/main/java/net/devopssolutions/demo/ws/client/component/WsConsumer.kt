@@ -1,29 +1,27 @@
 package net.devopssolutions.demo.ws.client.component
 
-import org.glassfish.tyrus.client.ClientManager
-import org.glassfish.tyrus.container.jdk.client.JdkClientContainer
-import org.glassfish.tyrus.core.CloseReasons
-import org.glassfish.tyrus.ext.client.java8.SessionBuilder
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import org.springframework.web.socket.*
+import org.springframework.web.socket.adapter.NativeWebSocketSession
+import org.springframework.web.socket.client.WebSocketConnectionManager
+import org.springframework.web.socket.client.standard.StandardWebSocketClient
+import org.springframework.web.socket.handler.AbstractWebSocketHandler
 import java.io.IOException
-import java.net.URI
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PreDestroy
-import javax.websocket.*
 
 @Component
-class WsConsumer {
+open class WsConsumer : AbstractWebSocketHandler() {
     private val log = org.slf4j.LoggerFactory.getLogger(WsConsumer::class.java)
-    private val clientManager = ClientManager.createClient(JdkClientContainer::class.java.name)
-    private val sessionBuilder = createSessionBuilder()
     private val ping = ByteBuffer.allocate(0)
     private val messagesCount = AtomicLong(0)
+    private val connectionManager = createConnectionManager()
     private val messagesCountInSecond = AtomicLong(0)
 
-    val session = AtomicReference<Session>()
+    val sessionReference = AtomicReference<NativeWebSocketSession>()
 
     init {
         log.info("going to open ws connection")
@@ -31,30 +29,38 @@ class WsConsumer {
     }
 
     private fun connect(): Boolean {
+        log.info("connecting ...")
         try {
-            this.session.set(sessionBuilder.connect())
+            connectionManager.stop()
+            connectionManager.start()
             return true
         } catch (e: Exception) {
-            this.session.set(null)
             log.warn("couldn't connect", e)
             return false
         }
     }
 
-    private fun createSessionBuilder(): SessionBuilder = SessionBuilder(clientManager)
-            .uri(URI("ws://localhost:8080/ws"))
-            .onOpen { session, endpointConfig -> onOpen(session, endpointConfig) }
-            .onError { session, throwable -> onError(session, throwable) }
-            .onClose { session, closeReason -> onClose(session, closeReason) }
-            .messageHandler(PongMessage::class.java, MessageHandler.Whole<PongMessage> { onPong(it) })// bug in tyrus
-            .messageHandler(ByteBuffer::class.java) { onMessage(it) }
-            .messageHandler(String::class.java) { onMessage(it) }
+    private fun createConnectionManager(): WebSocketConnectionManager =
+            WebSocketConnectionManager(StandardWebSocketClient(), this, "ws://localhost:8080/ws")
 
-    private fun onPong(pongMessage: PongMessage) {
-        log.info("incoming onPong: {}", pongMessage)
+    override fun handleTransportError(session: WebSocketSession?, exception: Throwable?) {
+        log.warn("error in ws session: " + session, exception)
     }
 
-    private fun onMessage(message: ByteBuffer) {
+    override fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?) {
+        log.info("closing ws connection session: {}, closeReason: {}", session, closeStatus)
+        sessionReference.compareAndSet(session as NativeWebSocketSession?, null)
+    }
+
+    override fun handlePongMessage(session: WebSocketSession?, message: PongMessage) {
+        log.info("incoming onPong: {}", message)
+    }
+
+    override fun handleTextMessage(session: WebSocketSession?, message: TextMessage) {
+        log.info("onTextMessage count: {}, message: {}", message.payloadLength, message.payload)
+    }
+
+    override fun handleBinaryMessage(session: WebSocketSession?, message: BinaryMessage) {
         val count = messagesCount.incrementAndGet()
         messagesCountInSecond.incrementAndGet()
         if (count % 50000 == 1L) {
@@ -62,21 +68,10 @@ class WsConsumer {
         }
     }
 
-    private fun onMessage(message: String) {
-        log.info("onTextMessage message: {}", message)
-    }
-
-    private fun onOpen(session: Session, endpointConfig: EndpointConfig) {
-        log.info("opened ws connection session: {}, endpointConfig: {}", session, endpointConfig)
+    override fun afterConnectionEstablished(session: WebSocketSession) {
+        log.info("opened ws connection session: {}, endpointConfig: {}", session, session.remoteAddress)
         messagesCount.set(0)
-    }
-
-    private fun onClose(session: Session, closeReason: CloseReason) {
-        log.info("closing ws connection session: {}, closeReason: {}", session, closeReason)
-    }
-
-    private fun onError(session: Session, throwable: Throwable) {
-        log.warn("error in ws session: " + session, throwable)
+        sessionReference.compareAndSet(null, session as NativeWebSocketSession?)
     }
 
     @Scheduled(fixedRate = 1000)
@@ -87,13 +82,13 @@ class WsConsumer {
 
     @Scheduled(fixedRate = 10000)
     private fun sendPing() {
-        val session = this.session.get()
+        val session = this.sessionReference.get()
         log.info("sending ping: {}", session != null)
         if (session != null) {
             try {
-                session.basicRemote.sendPing(ping)
+                session.sendMessage(PingMessage(ping))
             } catch (e: Exception) {
-                this.session.set(null)
+                this.sessionReference.set(null)
                 log.warn("exception sending ping", e)
             }
         } else {
@@ -103,10 +98,10 @@ class WsConsumer {
 
     @PreDestroy
     private fun stop() {
-        val session = this.session.get()
+        val session = this.sessionReference.get()
         if (session != null && session.isOpen) {
             try {
-                session.close(CloseReasons.GOING_AWAY.closeReason)
+                session.close(CloseStatus.GOING_AWAY)
             } catch (e: IOException) {
                 log.warn("exception closing session", e)
             }

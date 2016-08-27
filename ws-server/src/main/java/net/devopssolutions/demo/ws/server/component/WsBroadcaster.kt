@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 open class WsBroadcaster {
     private val log = org.slf4j.LoggerFactory.getLogger(WsBroadcaster::class.java)
 
-    private val sendersExecutor = LoggingThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(1000000))
+    private val sendersExecutor = LoggingThreadPoolExecutor(16, 32, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(1000000))
 
     @Autowired
     private lateinit var wsServer: WsServer
@@ -50,11 +50,11 @@ open class WsBroadcaster {
 
     private fun sendPayload(sessionId: String, payload: ByteBuffer) {
         wsServer.getSession(sessionId)?.apply {
-            synchronized(this) {
-                if (this.isOpen) {
-                    this.basicRemote.sendBinary(payload)
-                }
+//            synchronized(this) {
+            if (this.isOpen) {
+                this.basicRemote.sendBinary(payload)
             }
+//            }
         }
     }
 }

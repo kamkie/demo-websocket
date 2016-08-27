@@ -4,33 +4,28 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.IntNode
 import net.devopssolutions.demo.ws.rpc.*
 import net.devopssolutions.demo.ws.server.component.WsBroadcaster
-import org.springframework.beans.factory.annotation.Autowired
+import net.jpountz.lz4.LZ4Factory
 import org.springframework.stereotype.Component
-import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.security.Principal
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
-import java.util.zip.GZIPOutputStream
 
 @Component
 @RpcMethod(RpcMethods.FLOOD)
-open class FloodHandler : RpcMethodHandler {
+open class FloodHandler(private val wsBroadcaster: WsBroadcaster,
+                        private val objectMapper: ObjectMapper) : RpcMethodHandler {
     private val log = org.slf4j.LoggerFactory.getLogger(FloodHandler::class.java)
 
-    @Autowired
-    private lateinit var objectMapper: ObjectMapper
-
-    @Autowired
-    private lateinit var wsBroadcaster: WsBroadcaster
+    private val compressorLZ4Factory = LZ4Factory.fastestInstance()
 
     override fun handle(sessionId: String, id: String, params: Any, user: Principal) {
         log.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
 
         (0..(params as IntNode).intValue()).forEach {
             wsBroadcaster.sendToIdAsync(sessionId) {
-                val rpcMessage = createRpcMessage(id, 200)
+                val rpcMessage = createRpcMessage(id, 20)
                 val byteBuffer = getByteBuffer(rpcMessage)
                 byteBuffer
             }
@@ -38,9 +33,24 @@ open class FloodHandler : RpcMethodHandler {
     }
 
     private fun getByteBuffer(value: RpcMessage<*, *>): ByteBuffer {
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        objectMapper.writeValue(GZIPOutputStream(byteArrayOutputStream), value)
-        return ByteBuffer.wrap(byteArrayOutputStream.toByteArray())
+//        val payload = objectMapper.writeValueAsBytes(value)
+//        val maxCompressedLength = Snappy.maxCompressedLength(payload.size)
+//        val compressed = ByteArray(maxCompressedLength)
+//        val compressedLength = Snappy.rawCompress(payload, 0, payload.size, compressed, 0)
+//        return ByteBuffer.wrap(compressed, 0, compressedLength)
+
+//        return ByteBuffer.wrap(Snappy.compress(objectMapper.writeValueAsBytes(value)))
+
+//        val byteArrayOutputStream = ByteArrayOutputStream()
+//        objectMapper.writeValue(DeflaterOutputStream(byteArrayOutputStream), value)
+//        return ByteBuffer.wrap(byteArrayOutputStream.toByteArray())
+
+        val payload = objectMapper.writeValueAsBytes(value)
+        val compressor = compressorLZ4Factory.fastCompressor()
+        val maxCompressedLength = compressor.maxCompressedLength(payload.size)
+        val compressed = ByteArray(maxCompressedLength)
+        val compressedLength = compressor.compress(payload, 0, payload.size, compressed, 0, maxCompressedLength)
+        return ByteBuffer.wrap(compressed, 0, compressedLength)
     }
 
     private fun createRpcMessage(id: String, size: Int): RpcMessage<Unit, Any> = RpcMessage(
