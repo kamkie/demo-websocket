@@ -10,10 +10,10 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 
 @Component
-class WsBroadcaster {
+open class WsBroadcaster {
     private val log = org.slf4j.LoggerFactory.getLogger(WsBroadcaster::class.java)
 
-    private val sendersExecutor = LoggingThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(10000))
+    private val sendersExecutor = LoggingThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(1000000))
 
     @Autowired
     private lateinit var wsServer: WsServer

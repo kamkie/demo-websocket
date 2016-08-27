@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component
 import java.security.Principal
 
 @Component
-class RpcMethodDispatcher {
+open class RpcMethodDispatcher {
 
     val log = LoggerFactory.getLogger(javaClass)
 

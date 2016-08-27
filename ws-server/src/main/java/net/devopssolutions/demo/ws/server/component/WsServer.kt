@@ -20,7 +20,7 @@ import java.util.zip.GZIPInputStream
 import javax.websocket.*
 
 @Component
-class WsServer : Endpoint() {
+open class WsServer : Endpoint() {
     private val log = LoggerFactory.getLogger(WsServer::class.java)
 
     private val ping = ByteBuffer.allocate(0)

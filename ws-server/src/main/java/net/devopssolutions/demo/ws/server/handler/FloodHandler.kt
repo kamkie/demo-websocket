@@ -16,7 +16,7 @@ import java.util.zip.GZIPOutputStream
 
 @Component
 @RpcMethod(RpcMethods.FLOOD)
-class FloodHandler : RpcMethodHandler {
+open class FloodHandler : RpcMethodHandler {
     private val log = org.slf4j.LoggerFactory.getLogger(FloodHandler::class.java)
 
     @Autowired
@@ -30,7 +30,7 @@ class FloodHandler : RpcMethodHandler {
 
         (0..(params as IntNode).intValue()).forEach {
             wsBroadcaster.sendToIdAsync(sessionId) {
-                val rpcMessage = createRpcMessage(id, 20)
+                val rpcMessage = createRpcMessage(id, 200)
                 val byteBuffer = getByteBuffer(rpcMessage)
                 byteBuffer
             }

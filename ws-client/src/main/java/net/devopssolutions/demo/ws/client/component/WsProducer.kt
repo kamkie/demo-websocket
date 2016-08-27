@@ -60,7 +60,7 @@ class WsProducer {
     }
 
     private fun sendMessage(session: Session, message: RpcMessage<*, Unit>) {
-        var sendStream = session.basicRemote.sendStream
+        val sendStream = session.basicRemote.sendStream
         objectMapper.writeValue(GZIPOutputStream(sendStream), message)
     }
 
