@@ -45,6 +45,7 @@ open class FloodHandler(private val wsBroadcaster: WsBroadcaster,
 
 //        val byteArrayOutputStream = ByteArrayOutputStream()
 //        objectMapper.writeValue(DeflaterOutputStream(byteArrayOutputStream), value)
+//        objectMapper.writeValue(GZIPOutputStream(byteArrayOutputStream), value)
 //        return ByteBuffer.wrap(byteArrayOutputStream.toByteArray())
 
 //        val payload = objectMapper.writeValueAsBytes(value)

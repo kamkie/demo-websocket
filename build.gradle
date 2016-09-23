@@ -10,7 +10,7 @@ def getVersionName = { ->
 buildscript {
     ext {
         kotlin_version = '1.0.3'
-        springBootVersion = '1.4.0.RELEASE'
+        springBootVersion = '1.4.1.RELEASE'
         tyrusVersion = '1.13'
         rxJavaVersion = '1.1.1'
     }
