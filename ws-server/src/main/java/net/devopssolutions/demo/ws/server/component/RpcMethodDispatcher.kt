@@ -18,7 +18,7 @@ open class RpcMethodDispatcher {
 
     @Autowired
     private fun init(handlers: List<RpcMethodHandler>) {
-        handlerMap = handlers.associateBy { it.javaClass.getAnnotation(RpcMethod::class.java).value }
+        handlerMap = handlers.associateBy { it.javaClass.getAnnotation(RpcMethod::class.java).value.method }
     }
 
     @SuppressWarnings("unchecked")

@@ -8,7 +8,7 @@ import java.security.Principal
 
 @Component
 @RpcMethod(RpcMethods.HELLO)
-class HelloWordHandler : RpcMethodHandler {
+open class HelloWordHandler : RpcMethodHandler {
     private val log = org.slf4j.LoggerFactory.getLogger(HelloWordHandler::class.java)
 
     override fun handle(sessionId: String, id: String, params: Any, user: Principal) {

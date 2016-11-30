@@ -63,7 +63,7 @@ open class FloodHandler(private val wsBroadcaster: WsBroadcaster,
     private fun createRpcMessage(id: String, size: Int): RpcMessage<Unit, Any> = RpcMessage(
             id = id,
             created = LocalDateTime.now(ZoneOffset.UTC),
-            method = RpcMethods.FLOOD,
+            method = RpcMethods.FLOOD.method,
             type = RpcType.RESPONSE,
             response = createPayload(size))
 

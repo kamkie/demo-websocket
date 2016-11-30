@@ -9,8 +9,8 @@ def getVersionName = { ->
 
 buildscript {
     ext {
-        kotlin_version = '1.0.3'
-        springBootVersion = '1.4.1.RELEASE'
+        kotlin_version = '1.0.5'
+        springBootVersion = '1.4.2.RELEASE'
         tyrusVersion = '1.13'
         rxJavaVersion = '1.1.1'
     }
@@ -48,7 +48,7 @@ subprojects {
 }
 
 project(':ws-client') {
-    apply plugin: 'spring-boot'
+    apply plugin: 'org.springframework.boot'
 
     configurations {
         compile.exclude module: "spring-boot-starter-tomcat"
@@ -67,10 +67,14 @@ project(':ws-client') {
 //        compile("org.glassfish.tyrus:tyrus-container-jdk-client:$tyrusVersion")
 //        compile("org.glassfish.tyrus.ext:tyrus-client-java8:1.12")
     }
+
+    bootRun {
+        systemProperties["spring.output.ansi.enabled"] = "always"
+    }
 }
 
 project(':ws-server') {
-    apply plugin: 'spring-boot'
+    apply plugin: 'org.springframework.boot'
 
     configurations {
         compile.exclude module: "spring-boot-starter-tomcat"
@@ -95,8 +99,12 @@ project(':ws-server') {
 //        compile("io.reactivex:rxjava:$rxJavaVersion")
 //        compile('io.reactivex:rxjava-async-util:0.21.0')
     }
+
+    bootRun {
+        systemProperties["spring.output.ansi.enabled"] = "always"
+    }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.0'
+    gradleVersion = '3.1'
 }

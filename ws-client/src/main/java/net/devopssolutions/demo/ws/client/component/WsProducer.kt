@@ -30,7 +30,7 @@ open class WsProducer {
                 val message = RpcMessage<String, Unit>(
                         id = UUID.randomUUID().toString(),
                         created = LocalDateTime.now(ZoneOffset.UTC),
-                        method = RpcMethods.HELLO,
+                        method = RpcMethods.HELLO.method,
                         type = RpcType.REQUEST,
                         params = "word")
                 sendMessage(session, message)
@@ -49,7 +49,7 @@ open class WsProducer {
                 val message = RpcMessage<Int, Unit>(
                         id = UUID.randomUUID().toString(),
                         created = LocalDateTime.now(ZoneOffset.UTC),
-                        method = RpcMethods.FLOOD,
+                        method = RpcMethods.FLOOD.method,
                         type = RpcType.REQUEST,
                         params = 1000000)
                 sendMessage(session, message)
