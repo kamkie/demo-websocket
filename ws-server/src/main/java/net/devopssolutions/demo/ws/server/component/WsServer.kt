@@ -103,7 +103,7 @@ open class WsServer : Endpoint() {
         }
     }
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 10_000)
     fun sendPings() {
         log.info("sending pings: {}", sessions.size)
         getAllSessions().forEach { this.sendPing(it) }

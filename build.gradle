@@ -1,31 +1,14 @@
-def getVersionName = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine 'git', 'describe', '--tags'
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
-
-buildscript {
-    ext {
-        kotlin_version = '1.0.5'
-        springBootVersion = '1.4.2.RELEASE'
-        tyrusVersion = '1.13'
-        rxJavaVersion = '1.1.1'
-    }
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
+plugins {
+    id 'com.palantir.git-version' version '0.10.1'
+    id "org.springframework.boot" version "2.0.0.RELEASE" apply false
+    id "com.gorylenko.gradle-git-properties" version "1.4.21"
+    id 'com.github.ben-manes.versions' version '0.17.0'
+    id "org.jetbrains.kotlin.jvm" version "1.2.30" apply false
 }
 
 allprojects {
     group 'net.devopssolutions'
-    version getVersionName()
+    version gitVersion()
 
     repositories {
         mavenCentral()
@@ -37,13 +20,22 @@ subprojects {
     apply plugin: "kotlin"
     apply plugin: 'pmd'
     apply plugin: 'findbugs'
+    apply plugin: 'com.github.ben-manes.versions'
+    apply plugin: 'io.spring.dependency-management'
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
-    dependencies {
-        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    dependencyManagement {
+        imports {
+            mavenBom("io.spring.platform:platform-bom:Brussels-SR7")
+        }
+    }
 
-        testCompile group: 'junit', name: 'junit', version: '4.11'
+    dependencies {
+        compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+        compile "org.jetbrains.kotlin:kotlin-reflect"
+
+        testCompile group: 'junit', name: 'junit'
     }
 }
 
@@ -63,13 +55,10 @@ project(':ws-client') {
         compile("org.springframework.boot:spring-boot-actuator")
 //        compile("org.springframework.boot:spring-boot-devtools")
         compile("org.springframework.boot:spring-boot-configuration-processor")
-//        compile("com.fasterxml.jackson.core:jackson-databind")
-//        compile("org.glassfish.tyrus:tyrus-container-jdk-client:$tyrusVersion")
-//        compile("org.glassfish.tyrus.ext:tyrus-client-java8:1.12")
     }
 
     bootRun {
-        systemProperties["spring.output.ansi.enabled"] = "always"
+        systemProperty "spring.output.ansi.enabled", "always"
     }
 }
 
@@ -91,20 +80,17 @@ project(':ws-server') {
 //        compile("org.springframework.boot:spring-boot-devtools")
         compile("org.springframework.boot:spring-boot-configuration-processor")
 
-        compile group: 'org.xerial.snappy', name: 'snappy-java', version: '1.1.2.6'
-        compile group: 'net.jpountz.lz4', name: 'lz4', version: '1.3.0'
-        compile('de.ruedigermoeller:fst:2.47')
-
-
-//        compile("io.reactivex:rxjava:$rxJavaVersion")
-//        compile('io.reactivex:rxjava-async-util:0.21.0')
+//        compile group: 'org.xerial.snappy', name: 'snappy-java', version: '1.1.7.1'
+        compile group: 'net.jpountz.lz4', name: 'lz4', version: '1.3'
+        compile('de.ruedigermoeller:fst:2.57')
     }
 
     bootRun {
-        systemProperties["spring.output.ansi.enabled"] = "always"
+        systemProperty "spring.output.ansi.enabled", "always"
     }
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '3.1'
+    gradleVersion = '4.6'
+    distributionType = org.gradle.api.tasks.wrapper.Wrapper.DistributionType.ALL
 }

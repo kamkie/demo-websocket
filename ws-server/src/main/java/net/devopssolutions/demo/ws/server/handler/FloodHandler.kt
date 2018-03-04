@@ -68,7 +68,7 @@ open class FloodHandler(private val wsBroadcaster: WsBroadcaster,
             response = createPayload(size))
 
     private fun createPayload(size: Int): String {
-        val sb = StringBuilder(10000)
+        val sb = StringBuilder(size * 36 + 100)
         val uuid = UUID.randomUUID().toString()
         (0..size).forEach { sb.append(uuid) }
 

@@ -21,7 +21,7 @@ open class WsProducer {
     @Autowired
     private lateinit var wsConsumer: WsConsumer
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 10_000)
     private fun sendHello() {
         val session = wsConsumer.sessionReference.get()
         log.info("sending hello: {}", session != null)
@@ -40,7 +40,7 @@ open class WsProducer {
         }
     }
 
-    @Scheduled(fixedRate = 30000, initialDelay = 10000)
+    @Scheduled(fixedRate = 30_000, initialDelay = 10_000)
     private fun sendFlood() {
         val session = wsConsumer.sessionReference.get()
         log.info("sending flood: {}", session != null)
@@ -51,7 +51,7 @@ open class WsProducer {
                         created = LocalDateTime.now(ZoneOffset.UTC),
                         method = RpcMethods.FLOOD.method,
                         type = RpcType.REQUEST,
-                        params = 1000000)
+                        params = 1_000_000)
                 sendMessage(session, message)
             } catch (e: Exception) {
                 log.warn("exception sending hello", e)

@@ -44,7 +44,7 @@ open class WsConsumer : AbstractWebSocketHandler() {
             WebSocketConnectionManager(StandardWebSocketClient(), this, "ws://localhost:8080/ws")
 
     override fun handleTransportError(session: WebSocketSession?, exception: Throwable?) {
-        log.warn("error in ws session: " + session, exception)
+        log.warn("error in ws session: $session", exception)
     }
 
     override fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?) {
@@ -80,7 +80,7 @@ open class WsConsumer : AbstractWebSocketHandler() {
         log.info("messagesCountInSecond: {}", count)
     }
 
-    @Scheduled(fixedRate = 10000)
+    @Scheduled(fixedRate = 10_000)
     private fun sendPing() {
         val session = this.sessionReference.get()
         log.info("sending ping: {}", session != null)
