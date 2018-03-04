@@ -61,12 +61,14 @@ subprojects {
             dependency("org.springframework.boot:spring-boot-starter-web:$springBootVersion") {
                 exclude("org.springframework.boot:spring-boot-starter-tomcat")
             }
+            dependency("io.github.microutils:kotlin-logging:1.5.3")
         }
     }
 
     dependencies {
         compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
         compile("org.jetbrains.kotlin:kotlin-reflect")
+        compile("io.github.microutils:kotlin-logging")
 
         testCompile("junit:junit")
     }

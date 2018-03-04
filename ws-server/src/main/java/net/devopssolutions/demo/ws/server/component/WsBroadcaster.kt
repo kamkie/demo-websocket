@@ -1,5 +1,6 @@
 package net.devopssolutions.demo.ws.server.component
 
+import mu.KLogging
 import net.devopssolutions.demo.ws.server.util.LoggingThreadPoolExecutor
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -11,7 +12,7 @@ import java.util.concurrent.TimeUnit
 
 @Component
 open class WsBroadcaster {
-    private val log = org.slf4j.LoggerFactory.getLogger(WsBroadcaster::class.java)
+    companion object : KLogging()
 
     private val sendersExecutor = LoggingThreadPoolExecutor(16, 32, 2, TimeUnit.MINUTES, ArrayBlockingQueue<Runnable>(1000000))
 
@@ -50,7 +51,7 @@ open class WsBroadcaster {
 
     private fun sendPayload(sessionId: String, payload: ByteBuffer) {
         wsServer.getSession(sessionId)?.apply {
-//            synchronized(this) {
+            //            synchronized(this) {
             if (this.isOpen) {
                 this.basicRemote.sendBinary(payload)
             }

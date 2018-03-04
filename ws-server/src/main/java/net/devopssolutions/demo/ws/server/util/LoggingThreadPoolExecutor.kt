@@ -1,24 +1,35 @@
 package net.devopssolutions.demo.ws.server.util
 
+import mu.KLogging
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
-class LoggingThreadPoolExecutor : ThreadPoolExecutor {
-    private val log = org.slf4j.LoggerFactory.getLogger(LoggingThreadPoolExecutor::class.java)
-
-    constructor(corePoolSize: Int, maximumPoolSize: Int, keepAliveTime: Long, unit: TimeUnit, workQueue: BlockingQueue<Runnable>)
-    : super(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, Executors.defaultThreadFactory(), CallerRunsPolicy()) {
-    }
+class LoggingThreadPoolExecutor(
+        corePoolSize: Int,
+        maximumPoolSize: Int,
+        keepAliveTime: Long,
+        unit: TimeUnit,
+        workQueue: BlockingQueue<Runnable>
+) : ThreadPoolExecutor(
+        corePoolSize,
+        maximumPoolSize,
+        keepAliveTime,
+        unit,
+        workQueue,
+        Executors.defaultThreadFactory(),
+        CallerRunsPolicy()
+) {
+    companion object : KLogging()
 
     override fun execute(command: Runnable) {
-        super.execute(Runnable {
+        super.execute {
             try {
                 command.run()
             } catch (e: Exception) {
-                log.warn("uncached exception in", e)
+                logger.warn("uncached exception in", e)
             }
-        })
+        }
     }
 }

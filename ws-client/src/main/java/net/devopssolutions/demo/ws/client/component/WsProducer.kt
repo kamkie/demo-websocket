@@ -1,6 +1,7 @@
 package net.devopssolutions.demo.ws.client.component
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import mu.KLogging
 import net.devopssolutions.demo.ws.rpc.RpcMessage
 import net.devopssolutions.demo.ws.rpc.RpcMethods
 import net.devopssolutions.demo.ws.rpc.RpcType
@@ -15,7 +16,8 @@ import java.util.zip.GZIPOutputStream
 
 @Component
 open class WsProducer {
-    private val log = org.slf4j.LoggerFactory.getLogger(WsProducer::class.java)
+    companion object : KLogging()
+
     private val objectMapper = ObjectMapper()
 
     @Autowired
@@ -24,7 +26,7 @@ open class WsProducer {
     @Scheduled(fixedRate = 10_000)
     private fun sendHello() {
         val session = wsConsumer.sessionReference.get()
-        log.info("sending hello: {}", session != null)
+        logger.info("sending hello: {}", session != null)
         session?.apply {
             try {
                 val message = RpcMessage<String, Unit>(
@@ -35,7 +37,7 @@ open class WsProducer {
                         params = "word")
                 sendMessage(session, message)
             } catch (e: Exception) {
-                log.warn("exception sending hello", e)
+                logger.warn("exception sending hello", e)
             }
         }
     }
@@ -43,7 +45,7 @@ open class WsProducer {
     @Scheduled(fixedRate = 30_000, initialDelay = 10_000)
     private fun sendFlood() {
         val session = wsConsumer.sessionReference.get()
-        log.info("sending flood: {}", session != null)
+        logger.info("sending flood: {}", session != null)
         session?.apply {
             try {
                 val message = RpcMessage<Int, Unit>(
@@ -54,7 +56,7 @@ open class WsProducer {
                         params = 1_000_000)
                 sendMessage(session, message)
             } catch (e: Exception) {
-                log.warn("exception sending hello", e)
+                logger.warn("exception sending hello", e)
             }
         }
     }

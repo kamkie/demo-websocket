@@ -1,16 +1,15 @@
 package net.devopssolutions.demo.ws.server.component
 
+import mu.KLogging
 import net.devopssolutions.demo.ws.rpc.RpcMethod
 import net.devopssolutions.demo.ws.rpc.RpcMethodHandler
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import java.security.Principal
 
 @Component
 open class RpcMethodDispatcher {
-
-    val log = LoggerFactory.getLogger(javaClass)
+    companion object : KLogging()
 
     lateinit var handlerMap: Map<String, RpcMethodHandler>
         private set
@@ -27,7 +26,7 @@ open class RpcMethodDispatcher {
         if (rpcMethodHandler != null) {
             rpcMethodHandler.handle(sessionId, id, params, user)
         } else {
-            log.warn("no handler for method: {} ", method)
+            logger.warn("no handler for method: {} ", method)
         }
     }
 }

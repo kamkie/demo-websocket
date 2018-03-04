@@ -2,6 +2,7 @@ package net.devopssolutions.demo.ws.server.handler
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.IntNode
+import mu.KLogging
 import net.devopssolutions.demo.ws.rpc.*
 import net.devopssolutions.demo.ws.server.component.WsBroadcaster
 import net.jpountz.lz4.LZ4Factory
@@ -15,15 +16,17 @@ import java.util.*
 
 @Component
 @RpcMethod(RpcMethods.FLOOD)
-open class FloodHandler(private val wsBroadcaster: WsBroadcaster,
-                        private val objectMapper: ObjectMapper) : RpcMethodHandler {
-    private val log = org.slf4j.LoggerFactory.getLogger(FloodHandler::class.java)
+open class FloodHandler(
+        private val wsBroadcaster: WsBroadcaster,
+        private val objectMapper: ObjectMapper
+) : RpcMethodHandler {
+    companion object : KLogging()
 
     private val compressorLZ4Factory = LZ4Factory.fastestInstance()
     private val serializationConfig = FSTConfiguration.createDefaultConfiguration()
 
     override fun handle(sessionId: String, id: String, params: Any, user: Principal) {
-        log.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
+        logger.info("handling rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
 
         (0..(params as IntNode).intValue()).forEach {
             wsBroadcaster.sendToIdAsync(sessionId) {
