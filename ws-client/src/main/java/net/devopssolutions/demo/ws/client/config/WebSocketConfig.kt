@@ -1,30 +1,21 @@
-package net.devopssolutions.demo.ws.server.config
+package net.devopssolutions.demo.ws.client.config
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.io.buffer.DefaultDataBufferFactory
+import org.springframework.scheduling.annotation.EnableScheduling
+import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
+
 
 @Configuration
+@EnableScheduling
 open class WebSocketConfig {
 
-//    @Bean
-//    open fun createWebSocketContainer(): WebSocketClient  {
-//        val container = ServletServerContainerFactoryBean()
-//        container.setMaxTextMessageBufferSize(8192)
-//        container.setMaxBinaryMessageBufferSize(8192)
-//        return container
-//    }
+    @Bean
+    open fun objectMapper() = ObjectMapper()
 
-//    @Bean
-//    open fun chatEndpointRegistration(wsServer: WsServer) = ServerEndpointRegistration("/ws", wsServer)
-//
-//    @Bean
-//    open fun endpointExporter() = ServerEndpointExporter()
-//
-//    @Autowired
-//    private fun init(servletContext: ServletContext) {
-//        val serverContainer = servletContext.getAttribute("javax.websocket.server.ServerContainer") as WebSocketContainer
-//        serverContainer.defaultMaxBinaryMessageBufferSize = 100000000
-//        serverContainer.defaultMaxTextMessageBufferSize = 1000000
-//        serverContainer.defaultMaxSessionIdleTimeout = 10000
-//    }
+    @Bean
+    open fun webSocketClient() = ReactorNettyWebSocketClient()
 
 }

@@ -3,66 +3,99 @@ package net.devopssolutions.demo.ws.client.component
 import mu.KLogging
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import org.springframework.web.socket.*
-import org.springframework.web.socket.adapter.NativeWebSocketSession
-import org.springframework.web.socket.client.WebSocketConnectionManager
-import org.springframework.web.socket.client.standard.StandardWebSocketClient
-import org.springframework.web.socket.handler.AbstractWebSocketHandler
-import java.io.IOException
-import java.nio.ByteBuffer
+import org.springframework.web.reactive.socket.CloseStatus
+import org.springframework.web.reactive.socket.WebSocketMessage
+import org.springframework.web.reactive.socket.WebSocketSession
+import org.springframework.web.reactive.socket.client.WebSocketClient
+import reactor.core.Disposable
+import reactor.core.publisher.EmitterProcessor
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+import java.net.URI
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PreDestroy
 
 @Component
-open class WsConsumer : AbstractWebSocketHandler() {
+open class WsConsumer(
+        private val webSocketClient: WebSocketClient,
+        private val wsProducer: WsProducer
+) {
     companion object : KLogging()
 
-    private val ping = ByteBuffer.allocate(0)
     private val messagesCount = AtomicLong(0)
-    private val connectionManager = createConnectionManager()
     private val messagesCountInSecond = AtomicLong(0)
+    private val subscriptionReference = AtomicReference<Disposable?>()
 
-    val sessionReference = AtomicReference<NativeWebSocketSession>()
-
-    init {
-        logger.info("going to open ws connection")
-        connect()
-    }
-
-    private fun connect(): Boolean {
+    private fun connect() {
         logger.info("connecting ...")
-        try {
-            connectionManager.stop()
-            connectionManager.start()
-            return true
-        } catch (e: Exception) {
-            logger.warn("couldn't connect", e)
-            return false
+        val subscription = webSocketClient
+                .execute(URI("ws://localhost:8080/ws"), this::handle)
+                .subscribe()
+        if (subscriptionReference.compareAndSet(null, subscription)) {
+            messagesCount.set(0)
+
+            logger.info("subscription set")
+        } else {
+            logger.warn("another session is connected")
+            subscription.dispose()
         }
     }
 
-    private fun createConnectionManager(): WebSocketConnectionManager =
-            WebSocketConnectionManager(StandardWebSocketClient(), this, "ws://localhost:8080/ws")
+    private fun handle(session: WebSocketSession): Mono<Void> {
+        logger.info("opened ws connection session: {}, endpointConfig: {}", session, session.handshakeInfo)
 
-    override fun handleTransportError(session: WebSocketSession?, exception: Throwable?) {
-        logger.warn("error in ws session: $session", exception)
+        val emitterProcessor = createSender(session)
+
+        return session.send(emitterProcessor)
+                .mergeWith(createReceiver(session, emitterProcessor).then())
+                .then()
+                .doOnError { exception -> afterConnectionClosed(session, CloseStatus.SERVER_ERROR, exception) }
+                .doOnSuccess { afterConnectionClosed(session, CloseStatus.GOING_AWAY) }
+                .doOnCancel {
+                    logger.warn("will close session")
+                    session.close().block()
+                }
     }
 
-    override fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?) {
-        logger.info("closing ws connection session: {}, closeReason: {}", session, closeStatus)
-        sessionReference.compareAndSet(session as NativeWebSocketSession?, null)
+    private fun createReceiver(session: WebSocketSession, emitterProcessor: EmitterProcessor<WebSocketMessage>): Flux<WebSocketMessage> =
+            session.receive().doOnNext { message -> handleMessage(session, emitterProcessor, message) }
+
+    private fun createSender(session: WebSocketSession): EmitterProcessor<WebSocketMessage> {
+        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>()
+        wsProducer.sendFlood(session).subscribeWith(emitterProcessor)
+        wsProducer.sendHello(session).subscribeWith(emitterProcessor)
+        return emitterProcessor
     }
 
-    override fun handlePongMessage(session: WebSocketSession?, message: PongMessage) {
-        logger.info("incoming onPong: {}", message)
+    private fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?, exception: Throwable? = null) {
+        logger.info("ws connection closed, session: {}, closeReason: {}", session, closeStatus, exception)
     }
 
-    override fun handleTextMessage(session: WebSocketSession?, message: TextMessage) {
-        logger.info("onTextMessage count: {}, message: {}", message.payloadLength, message.payload)
+    private fun handleMessage(
+            session: WebSocketSession,
+            emitterProcessor: EmitterProcessor<WebSocketMessage>,
+            message: WebSocketMessage) = when (message.type) {
+        WebSocketMessage.Type.PING -> handlePingMessage(session, emitterProcessor, message)
+        WebSocketMessage.Type.TEXT -> handleTextMessage(session, message)
+        WebSocketMessage.Type.BINARY -> handleBinaryMessage(session, message)
+        WebSocketMessage.Type.PONG -> handlePongMessage(session, message)
     }
 
-    override fun handleBinaryMessage(session: WebSocketSession?, message: BinaryMessage) {
+    private fun handlePingMessage(session: WebSocketSession, emitterProcessor: EmitterProcessor<WebSocketMessage>, message: WebSocketMessage) {
+        logger.info("incoming Ping: {} will respond with pong", message)
+        emitterProcessor.onNext(session.pongMessage { it.allocateBuffer(0) })
+    }
+
+    private fun handlePongMessage(session: WebSocketSession, message: WebSocketMessage) {
+        logger.info("incoming Pong: {}", message)
+    }
+
+    private fun handleTextMessage(session: WebSocketSession, message: WebSocketMessage) {
+        logger.info("onTextMessage count: {}, message: {}", message.payload.readableByteCount(), message.payloadAsText)
+    }
+
+    private fun handleBinaryMessage(session: WebSocketSession, message: WebSocketMessage) {
         val count = messagesCount.incrementAndGet()
         messagesCountInSecond.incrementAndGet()
         if (count % 50000 == 1L) {
@@ -70,44 +103,25 @@ open class WsConsumer : AbstractWebSocketHandler() {
         }
     }
 
-    override fun afterConnectionEstablished(session: WebSocketSession) {
-        logger.info("opened ws connection session: {}, endpointConfig: {}", session, session.remoteAddress)
-        messagesCount.set(0)
-        sessionReference.compareAndSet(null, session as NativeWebSocketSession?)
-    }
-
-    @Scheduled(fixedRate = 1000)
+    @Scheduled(fixedRate = 1_000)
     private fun countMessages() {
         val count = messagesCountInSecond.getAndSet(0)
         logger.info("messagesCountInSecond: {}", count)
     }
 
-    @Scheduled(fixedRate = 10_000)
-    private fun sendPing() {
-        val session = this.sessionReference.get()
-        logger.info("sending ping: {}", session != null)
-        if (session != null) {
-            try {
-                session.sendMessage(PingMessage(ping))
-            } catch (e: Exception) {
-                this.sessionReference.set(null)
-                logger.warn("exception sending ping", e)
-            }
-        } else {
+    @Scheduled(fixedRate = 5_000)
+    private fun reConnect() {
+        val disposable = this.subscriptionReference.updateAndGet {
+            if (it?.isDisposed == true) null else it
+        }
+        if (disposable == null) {
             connect()
         }
     }
 
     @PreDestroy
     private fun stop() {
-        val session = this.sessionReference.get()
-        if (session != null && session.isOpen) {
-            try {
-                session.close(CloseStatus.GOING_AWAY)
-            } catch (e: IOException) {
-                logger.warn("exception closing session", e)
-            }
-        }
+        subscriptionReference.getAndSet(null)?.dispose()
     }
 
 }

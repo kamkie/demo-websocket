@@ -88,11 +88,7 @@ project(":ws-client") {
     dependencies {
         compile(project(":ws-models"))
 
-        compile("org.springframework.boot:spring-boot-starter-web") {
-            exclude("org.springframework.boot:spring-boot-starter-tomcat")
-        }
-        compile("org.springframework.boot:spring-boot-starter-undertow")
-        compile("org.springframework.boot:spring-boot-starter-websocket")
+        compile("org.springframework.boot:spring-boot-starter-webflux")
         compile("org.springframework.boot:spring-boot-actuator")
 //        compile("org.springframework.boot:spring-boot-devtools")
         compile("org.springframework.boot:spring-boot-configuration-processor")

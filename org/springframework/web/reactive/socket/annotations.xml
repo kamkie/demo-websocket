@@ -1,0 +1,5 @@
+<root>
+    <item name='org.springframework.web.reactive.socket.WebSocketMessage org.springframework.web.reactive.socket.WebSocketMessage.Type getType()'>
+        <annotation name='org.jetbrains.annotations.NotNull'/>
+    </item>
+</root>
