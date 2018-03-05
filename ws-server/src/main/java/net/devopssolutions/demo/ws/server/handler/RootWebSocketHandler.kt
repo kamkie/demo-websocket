@@ -1,106 +1,61 @@
 package net.devopssolutions.demo.ws.server.handler
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import mu.KLogging
 import net.devopssolutions.demo.ws.rpc.RpcMessage
-import net.jpountz.lz4.LZ4Factory
-import org.nustaq.serialization.FSTConfiguration
-import org.springframework.core.io.buffer.DataBuffer
-import org.springframework.core.io.buffer.DataBufferFactory
+import net.devopssolutions.demo.ws.server.component.RpcMethodDispatcher
+import net.devopssolutions.demo.ws.server.component.WsProducers
 import org.springframework.stereotype.Component
-import org.springframework.web.reactive.socket.CloseStatus
 import org.springframework.web.reactive.socket.WebSocketHandler
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
-import reactor.core.publisher.*
-import reactor.core.scheduler.Schedulers
-import java.nio.charset.StandardCharsets
-import java.time.Duration
-import java.util.*
+import reactor.core.publisher.Flux
+import reactor.core.publisher.FluxSink
+import reactor.core.publisher.Mono
+import reactor.core.publisher.SignalType
+import reactor.util.Loggers
+import java.util.logging.Level
 import java.util.zip.GZIPInputStream
-import kotlin.math.pow
 
+val excludeOnNext = SignalType.values().filter { it != SignalType.ON_NEXT }.toTypedArray()
+val excludeOnNextAndRequest = SignalType.values().asSequence()
+        .minus(SignalType.REQUEST)
+        .minus(SignalType.ON_NEXT)
+        .toList().toTypedArray()
 
 @Component
 class RootWebSocketHandler(
-        private val floodHandler: FloodHandler,
+        private val rpcMethodDispatcher: RpcMethodDispatcher,
+        private val wsProducers: WsProducers,
         private val objectMapper: ObjectMapper
 ) : WebSocketHandler {
     companion object : KLogging()
 
-    private val staticPayload = UUID.randomUUID().toString().toByteArray(StandardCharsets.UTF_8)
-
-    private val compressorLZ4Factory = LZ4Factory.fastestInstance()
-    private val serializationConfig = FSTConfiguration.createDefaultConfiguration()
 
     override fun handle(session: WebSocketSession): Mono<Void> {
         logger.info("opened ws connection session: {}, endpointConfig: {}", session, session.handshakeInfo)
 
-        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(1_000_000)
-        val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.IGNORE)
-//        buildPinger(session).subscribe { sink.next(it) }
+        val (emitter, sink) = wsProducers.buildSender(session)
 
-        return session.send(emitterProcessor)
+        return session.send(emitter)
                 .mergeWith(createReceiver(session, sink).then())
+                .log(Loggers.getLogger("session"), Level.INFO, true)
                 .then()
-                .doOnError { exception -> afterConnectionClosed(session, CloseStatus.SERVER_ERROR, exception) }
-                .doOnSuccess { afterConnectionClosed(session, CloseStatus.GOING_AWAY) }
-                .doOnCancel {
-                    logger.warn("will close session")
-                    session.close().block()
+    }
+
+    fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
+            : Flux<WebSocketMessage> {
+        return session.receive()
+                .log(Loggers.getLogger("receiver"), Level.INFO, true, *excludeOnNext)
+                .doOnNext { message ->
+                    when (message.type) {
+                        WebSocketMessage.Type.PING -> handlePingMessage(session, sink, message)
+                        WebSocketMessage.Type.TEXT -> handleTextMessage(session, sink, message)
+                        WebSocketMessage.Type.BINARY -> handleBinaryMessage(session, sink, message)
+                        WebSocketMessage.Type.PONG -> handlePongMessage(session, sink, message)
+                    }
                 }
-                .doOnSubscribe { logger.info("starting {}", it) }
-    }
-
-
-    private fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
-            : Flux<WebSocketMessage> = session.receive().doOnNext { message -> handleMessage(session, sink, message) }
-
-    private fun sendFloodMessages(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, id: String, numberOfMessages: Int) {
-        floodHandler.handle(id, numberOfMessages).mapToWebSocketMessage(session)
-                .subscribeOn(Schedulers.newParallel("foo", 8))
-                .subscribe { sink.next(it) }
-    }
-
-    private fun Flux<RpcMessage<Unit, String>>.mapToWebSocketMessage(session: WebSocketSession): Flux<WebSocketMessage> =
-            this.map { message ->
-                session.binaryMessage { dataBufferFactory ->
-                    writeToBuffer(message, dataBufferFactory)
-                }
-            }
-
-    private fun buildPinger(session: WebSocketSession): Flux<WebSocketMessage> = Flux.interval(Duration.ofSeconds(10))
-            .map { session.pingMessage { it.allocateBuffer(0) } }
-            .doOnNext { logger.info("sending ping") }
-
-    private fun writeToBuffer(value: RpcMessage<*, *>, dataBufferFactory: DataBufferFactory): DataBuffer {
-//        val payload = serializationConfig.asByteArray(value)
-        return dataBufferFactory.wrap(staticPayload)
-
-//        val payload = serializationConfig.asSharedByteArray(value, IntArray(1))
-//        val compressor = compressorLZ4Factory.fastCompressor()
-//        val compress = compressor.compress(payload)
-//        return dataBufferFactory.wrap(compress)
-
-//        val allocateBuffer = dataBufferFactory.allocateBuffer()
-//        objectMapper.writeValue(allocateBuffer.asOutputStream(), value)
-//        return allocateBuffer
-    }
-
-    private fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?, exception: Throwable? = null) {
-        logger.info("ws connection closed, session: {}, closeReason: {}", session, closeStatus, exception)
-    }
-
-    private fun handleMessage(
-            session: WebSocketSession,
-            sink: FluxSink<WebSocketMessage>,
-            message: WebSocketMessage) = when (message.type) {
-        WebSocketMessage.Type.PONG -> handlePongMessage(session, sink, message)
-        WebSocketMessage.Type.PING -> handlePingMessage(session, sink, message)
-        WebSocketMessage.Type.TEXT -> handleTextMessage(session, sink, message)
-        WebSocketMessage.Type.BINARY -> handleBinaryMessage(session, sink, message)
     }
 
     private fun handlePingMessage(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, message: WebSocketMessage) {
@@ -109,18 +64,21 @@ class RootWebSocketHandler(
     }
 
     private fun handlePongMessage(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, message: WebSocketMessage) {
-        logger.info("incoming Pong: {}", message)
+        logger.info { "incoming Pong: $message on session: $session, sink.isCancelled: ${sink.isCancelled}" }
     }
 
     private fun handleTextMessage(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, message: WebSocketMessage) {
-        logger.info("onTextMessage length: {}, message: {}", message.payload.readableByteCount(), message.payloadAsText)
+        val payload = message.payloadAsText
+        logger.info { "incoming TextMessage: $payload with length: ${message.payload.readableByteCount()} on session: $session, sink.isCancelled: ${sink.isCancelled}" }
+        val decodedMessage = objectMapper.readValue<RpcMessage<Any, Any>>(payload)
+        rpcMethodDispatcher.dispatch(session, decodedMessage).subscribe { sink.next(it) }
     }
 
     private fun handleBinaryMessage(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, message: WebSocketMessage) {
         val readableByteCount = message.payload.readableByteCount()
         val gzipInputStream = GZIPInputStream(message.payload.asInputStream())
-        val readValue = objectMapper.readValue<JsonNode>(gzipInputStream)
-        logger.info("onBinaryMessage length: {}, message: {}", readableByteCount, readValue)
-        sendFloodMessages(session, sink, UUID.randomUUID().toString(), 1_000_000)
+        val decodedMessage = objectMapper.readValue<RpcMessage<Any, Any>>(gzipInputStream)
+        logger.info { "incoming BinaryMessage with length: $readableByteCount on session: $session, sink.isCancelled: ${sink.isCancelled}, message: $decodedMessage" }
+        rpcMethodDispatcher.dispatch(session, decodedMessage).subscribe { sink.next(it) }
     }
 }

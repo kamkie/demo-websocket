@@ -5,23 +5,31 @@ import net.devopssolutions.demo.ws.rpc.RpcMessage
 import net.devopssolutions.demo.ws.rpc.RpcMethod
 import net.devopssolutions.demo.ws.rpc.RpcMethods
 import net.devopssolutions.demo.ws.rpc.RpcType
+import net.devopssolutions.demo.ws.server.component.toBinaryMessage
 import org.springframework.stereotype.Component
+import org.springframework.web.reactive.socket.WebSocketMessage
+import org.springframework.web.reactive.socket.WebSocketSession
 import reactor.core.publisher.Flux
+import reactor.core.scheduler.Schedulers
+import reactor.util.Loggers
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.*
+import java.util.logging.Level
 
 @Component
 @RpcMethod(RpcMethods.FLOOD)
-open class FloodHandler {
+class FloodHandler : RpcMethodHandler {
     companion object : KLogging()
 
-
-    fun handle(id: String, params: Int): Flux<RpcMessage<Unit, String>> {
-        logger.info("will send flood rpc message id: {}, method: {} params: {}", id, RpcMethods.FLOOD, params)
-
-        return Flux.range(0, params)
+    override fun handle(session: WebSocketSession, message: RpcMessage<Any, Any>): Flux<WebSocketMessage> {
+        @Suppress("UNCHECKED_CAST")
+        return Flux.range(0, message.params as Int)
+                .doOnSubscribe { logger.info("preparing flood message: $message on session: ${session.id}") }
                 .map { number -> createRpcMessage(number.toString(), 20) }
+                .log(Loggers.getLogger("sendFlood"), Level.INFO, true, *excludeOnNextAndRequest)
+                .toBinaryMessage(session)
+                .subscribeOn(Schedulers.newParallel("foo", 8))
     }
 
     private fun createRpcMessage(id: String, size: Int): RpcMessage<Unit, String> = RpcMessage(
@@ -29,14 +37,6 @@ open class FloodHandler {
             created = LocalDateTime.now(ZoneOffset.UTC),
             method = RpcMethods.FLOOD.method,
             type = RpcType.RESPONSE,
-            response = createPayload(size))
-
-    private fun createPayload(size: Int): String {
-        val sb = StringBuilder(size * 36 + 10)
-        val uuid = UUID.randomUUID().toString()
-        (0..size).forEach { sb.append(uuid) }
-
-        return sb.toString()
-    }
+            response = UUID.randomUUID().toString().repeat(size))
 
 }

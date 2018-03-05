@@ -15,19 +15,19 @@ import java.util.*
 
 
 @Configuration
-open class WebSocketConfig {
+class WebSocketConfig {
 
     @Bean
-    open fun objectMapper() = ObjectMapper().findAndRegisterModules()
+    fun objectMapper() = ObjectMapper().findAndRegisterModules()
 
     @Bean
-    open fun handlerAdapter() = WebSocketHandlerAdapter(webSocketService())
+    fun handlerAdapter() = WebSocketHandlerAdapter(webSocketService())
 
     @Bean
-    open fun webSocketService(): WebSocketService = HandshakeWebSocketService(ReactorNettyRequestUpgradeStrategy())
+    fun webSocketService(): WebSocketService = HandshakeWebSocketService(ReactorNettyRequestUpgradeStrategy())
 
     @Bean
-    open fun handlerMapping(rootHandler: RootWebSocketHandler): HandlerMapping {
+    fun handlerMapping(rootHandler: RootWebSocketHandler): HandlerMapping {
         val map = HashMap<String, WebSocketHandler>()
         map["/ws"] = rootHandler
 

@@ -1,9 +1,11 @@
 package net.devopssolutions.demo.ws.server.handler
 
-import reactor.core.publisher.Mono
-import java.security.Principal
+import net.devopssolutions.demo.ws.rpc.RpcMessage
+import org.springframework.web.reactive.socket.WebSocketMessage
+import org.springframework.web.reactive.socket.WebSocketSession
+import reactor.core.publisher.Flux
 
 interface RpcMethodHandler {
 
-    fun handle(sessionId: String, id: String, params: Mono<Any>, user: Mono<Principal>)
+    fun handle(session: WebSocketSession, message: RpcMessage<Any, Any>): Flux<WebSocketMessage>
 }
