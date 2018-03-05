@@ -41,8 +41,8 @@ class RootWebSocketHandler(
         val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.DROP)
 //        buildPinger(session).subscribe { sink.next(it) }
 
-        return session.send(emitterProcessor/*.subscribeOn(Schedulers.newParallel("foo", 4))*/)
-                .mergeWith(createReceiver(session, sink).subscribeOn(Schedulers.newParallel("bar", 4)).then())
+        return session.send(emitterProcessor)
+                .mergeWith(createReceiver(session, sink).then())
                 .then()
                 .doOnError { exception -> afterConnectionClosed(session, CloseStatus.SERVER_ERROR, exception) }
                 .doOnSuccess { afterConnectionClosed(session, CloseStatus.GOING_AWAY) }
@@ -75,12 +75,10 @@ class RootWebSocketHandler(
             .doOnNext { logger.info("sending ping") }
 
     private fun writeToBuffer(value: RpcMessage<*, *>, dataBufferFactory: DataBufferFactory): DataBuffer {
-        val payload = serializationConfig.asByteArray(value)
+        val payload = serializationConfig.asSharedByteArray(value, IntArray(1))
         val compressor = compressorLZ4Factory.fastCompressor()
-        val maxCompressedLength = compressor.maxCompressedLength(payload.size)
-        val compressed = ByteArray(maxCompressedLength)
-        val compressedLength = compressor.compress(payload, compressed)
-        return dataBufferFactory.wrap(compressed)
+        val compress = compressor.compress(payload)
+        return dataBufferFactory.wrap(compress)
     }
 
     private fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?, exception: Throwable? = null) {

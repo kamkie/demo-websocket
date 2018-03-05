@@ -1,6 +1,5 @@
 package net.devopssolutions.demo.ws.server.handler
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KLogging
 import net.devopssolutions.demo.ws.rpc.RpcMessage
 import net.devopssolutions.demo.ws.rpc.RpcMethod
@@ -14,10 +13,7 @@ import java.util.*
 
 @Component
 @RpcMethod(RpcMethods.FLOOD)
-open class FloodHandler(
-//        private val wsBroadcaster: WsBroadcaster,
-        private val objectMapper: ObjectMapper
-) {
+open class FloodHandler {
     companion object : KLogging()
 
 
@@ -36,7 +32,7 @@ open class FloodHandler(
             response = createPayload(size))
 
     private fun createPayload(size: Int): String {
-        val sb = StringBuilder(size * 36 + 100)
+        val sb = StringBuilder(size * 36 + 10)
         val uuid = UUID.randomUUID().toString()
         (0..size).forEach { sb.append(uuid) }
 
