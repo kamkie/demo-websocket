@@ -29,6 +29,7 @@ class WsConsumer {
                         WebSocketMessage.Type.PONG -> handlePongMessage(session, sink, message)
                     }
                 }
+                .doOnComplete { throw RuntimeException("force restart :P") }
     }
 
     private fun handlePingMessage(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, message: WebSocketMessage) {
