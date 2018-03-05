@@ -9,12 +9,12 @@ import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClien
 
 @Configuration
 @EnableScheduling
-open class WebSocketConfig {
+class WebSocketConfig {
 
     @Bean
-    open fun objectMapper() = ObjectMapper().findAndRegisterModules()
+    fun objectMapper() = ObjectMapper().findAndRegisterModules()
 
     @Bean
-    open fun webSocketClient() = ReactorNettyWebSocketClient()
+    fun webSocketClient() = ReactorNettyWebSocketClient()
 
 }

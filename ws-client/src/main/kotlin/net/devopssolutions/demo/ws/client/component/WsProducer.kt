@@ -16,7 +16,7 @@ import java.util.*
 import java.util.zip.GZIPOutputStream
 
 @Component
-open class WsProducer(
+class WsProducer(
         private val objectMapper: ObjectMapper
 ) {
     companion object : KLogging()

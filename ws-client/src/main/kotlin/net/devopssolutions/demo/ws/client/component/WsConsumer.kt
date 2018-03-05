@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PreDestroy
 
 @Component
-open class WsConsumer(
+class WsConsumer(
         private val webSocketClient: WebSocketClient,
         private val wsProducer: WsProducer
 ) {

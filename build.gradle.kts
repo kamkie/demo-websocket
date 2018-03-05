@@ -1,4 +1,3 @@
-import com.github.spotbugs.SpotBugsTask
 import groovy.lang.Closure
 import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.apply
@@ -8,11 +7,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 plugins {
-    id("com.palantir.git-version").version("0.10.1")
-    kotlin("jvm").version("1.2.30")
+    val kotlinVersion = "1.2.30"
+    kotlin("jvm").version(kotlinVersion)
+    id("org.jetbrains.kotlin.plugin.spring").version(kotlinVersion)
+    id("org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
     id("org.springframework.boot").version("2.0.0.RELEASE").apply(false)
+    id("com.palantir.git-version").version("0.10.1")
     id("io.spring.dependency-management").version("1.0.4.RELEASE")
-    id("com.github.spotbugs").version("1.6.0")
     id("com.gorylenko.gradle-git-properties").version("1.4.2")
     id("com.github.ben-manes.versions").version("0.17.0")
 }
@@ -43,9 +44,10 @@ subprojects {
     apply {
         plugin("java")
         plugin("org.jetbrains.kotlin.jvm")
-        plugin("pmd")
-        plugin("findbugs")
+        plugin("org.jetbrains.kotlin.plugin.allopen")
+        plugin("org.jetbrains.kotlin.plugin.spring")
         plugin("com.github.ben-manes.versions")
+        plugin("com.gorylenko.gradle-git-properties")
         plugin("io.spring.dependency-management")
     }
     java {
@@ -70,10 +72,15 @@ subprojects {
         testCompile("junit:junit")
     }
 
-    tasks.withType(KotlinCompile::class.java) {
-        kotlinOptions {
-            jvmTarget = "1.8"
+    tasks {
+        withType(KotlinCompile::class.java) {
+            kotlinOptions {
+                jvmTarget = "1.8"
+                freeCompilerArgs = listOf("-Xjsr305=strict")
+            }
         }
+
+        "generateGitProperties"().mustRunAfter("processResources")
     }
 }
 
