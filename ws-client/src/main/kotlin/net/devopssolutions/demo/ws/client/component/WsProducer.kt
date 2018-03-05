@@ -44,36 +44,40 @@ class WsProducer(
         return Pair(emitter, sink)
     }
 
-    fun sendHello(session: WebSocketSession): Flux<WebSocketMessage> =
-            Flux.interval(Duration.ofSeconds(5), Duration.ofSeconds(10))
-                    .map { helloMessage(it) }
-                    .map { message -> buildMessage(session, message) }
-                    .doOnError { logger.warn("error", it) }
-                    .doOnNext { logger.info("sending new hello message") }
-                    .log(Loggers.getLogger("sendHello"), Level.INFO, true)
+    fun sendHello(session: WebSocketSession): Flux<WebSocketMessage> {
+        return Flux.interval(Duration.ofSeconds(5), Duration.ofSeconds(10))
+                .map { helloMessage(it) }
+                .map { message -> buildMessage(session, message) }
+                .doOnError { logger.warn("error", it) }
+                .doOnNext { logger.info("sending new hello message") }
+                .log(Loggers.getLogger("sendHello"), Level.INFO, true)
+    }
 
-    fun sendFlood(session: WebSocketSession): Flux<WebSocketMessage> =
-            Flux.interval(Duration.ofSeconds(10), Duration.ofSeconds(30))
-                    .map { floodMessage(it) }
-                    .map { message -> buildMessage(session, message) }
-                    .doOnError { logger.warn("error", it) }
-                    .doOnNext { logger.info("sending new flood message") }
-                    .log(Loggers.getLogger("sendFlood"), Level.INFO, true)
+    fun sendFlood(session: WebSocketSession): Flux<WebSocketMessage> {
+        return Flux.interval(Duration.ofSeconds(10), Duration.ofSeconds(30))
+                .map { floodMessage() }
+                .map { message -> buildMessage(session, message) }
+                .doOnError { logger.warn("error", it) }
+                .doOnNext { logger.info("sending new flood message") }
+                .log(Loggers.getLogger("sendFlood"), Level.INFO, true)
+    }
 
-    fun sendPing(session: WebSocketSession): Flux<WebSocketMessage> =
-            Flux.interval(Duration.ofSeconds(30))
-                    .map { session.pingMessage { it.allocateBuffer(0) } }
-                    .doOnNext { WsConsumer.logger.info("sending ping") }
-                    .log(Loggers.getLogger("sendPing"), Level.INFO, true)
+    fun sendPing(session: WebSocketSession): Flux<WebSocketMessage> {
+        return Flux.interval(Duration.ofSeconds(30))
+                .map { session.pingMessage { it.allocateBuffer(0) } }
+                .doOnNext { WsConsumer.logger.info("sending ping") }
+                .log(Loggers.getLogger("sendPing"), Level.INFO, true)
+    }
 
-    fun logMessagesCount(messagesCountInSecond: AtomicLong): Flux<Long> =
-            Flux.interval(Duration.ofSeconds(1))
-                    .doOnNext {
-                        val count = messagesCountInSecond.getAndSet(0)
-                        if (count > 0) {
-                            WsConsumer.logger.info("messagesCountInSecond: {}", count)
-                        }
+    fun logMessagesCount(messagesCountInSecond: AtomicLong): Flux<Long> {
+        return Flux.interval(Duration.ofSeconds(1))
+                .doOnNext {
+                    val count = messagesCountInSecond.getAndSet(0)
+                    if (count > 0) {
+                        WsConsumer.logger.info("messagesCountInSecond: {}", count)
                     }
+                }
+    }
 
     private fun helloMessage(number: Long): RpcMessage<String, Unit> = RpcMessage(
             id = UUID.randomUUID().toString(),
@@ -82,7 +86,7 @@ class WsProducer(
             type = RpcType.REQUEST,
             params = "word $number")
 
-    private fun floodMessage(number: Long): RpcMessage<Int, Unit> = RpcMessage(
+    private fun floodMessage(): RpcMessage<Int, Unit> = RpcMessage(
             id = UUID.randomUUID().toString(),
             created = LocalDateTime.now(ZoneOffset.UTC),
             method = RpcMethods.FLOOD.method,
