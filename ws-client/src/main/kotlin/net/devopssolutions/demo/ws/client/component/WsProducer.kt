@@ -8,7 +8,9 @@ import net.devopssolutions.demo.ws.rpc.RpcType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
+import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Flux
+import reactor.core.publisher.FluxSink
 import reactor.util.Loggers
 import java.time.Duration
 import java.time.LocalDateTime
@@ -24,6 +26,23 @@ class WsProducer(
 ) {
     companion object : KLogging()
 
+    fun buildSender(session: WebSocketSession): Pair<Flux<WebSocketMessage>, FluxSink<WebSocketMessage>> {
+        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(1000)
+        val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.BUFFER)
+
+        val ping = sendPing(session).subscribe { sink.next(it) }
+        val hello = sendHello(session).subscribe { sink.next(it) }
+        val flood = sendFlood(session).subscribe { sink.next(it) }
+
+        val emitter = emitterProcessor
+                .doFinally {
+                    ping.dispose()
+                    hello.dispose()
+                    flood.dispose()
+                }
+                .log(Loggers.getLogger("emitter"), Level.INFO, true)
+        return Pair(emitter, sink)
+    }
 
     fun sendHello(session: WebSocketSession): Flux<WebSocketMessage> =
             Flux.interval(Duration.ofSeconds(5), Duration.ofSeconds(10))

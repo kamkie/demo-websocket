@@ -4,62 +4,20 @@ import mu.KLogging
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
-import org.springframework.web.reactive.socket.client.WebSocketClient
-import reactor.core.publisher.*
+import reactor.core.publisher.Flux
+import reactor.core.publisher.FluxSink
+import reactor.core.publisher.SignalType
 import reactor.util.Loggers
-import java.net.URI
-import java.time.Duration
 import java.util.concurrent.atomic.AtomicLong
 import java.util.logging.Level
-import javax.annotation.PreDestroy
 
 @Component
-class WsConsumer(
-        webSocketClient: WebSocketClient,
-        private val wsProducer: WsProducer
-) {
+class WsConsumer {
     companion object : KLogging()
 
-    private val messagesCountInSecond = AtomicLong(0)
-    private val subscription = webSocketClient
-            .execute(URI("ws://localhost:8080/ws"), this::handle)
-            .retryWhen { it.flatMap { Mono.delay(Duration.ofSeconds(5)) } }
-            .log()
-            .subscribe()
-    private val messageCountLogger = wsProducer.logMessagesCount(messagesCountInSecond)
-            .retry()
-            .subscribe()
+    val messagesCountInSecond = AtomicLong(0)
 
-    private fun handle(session: WebSocketSession): Mono<Void> {
-        logger.info("opened ws connection session: {}, endpointConfig: {}", session, session.handshakeInfo)
-
-        val (emitter, sink) = buildSender(session)
-
-        return session.send(emitter)
-                .mergeWith(createReceiver(session, sink).then())
-                .log(Loggers.getLogger("session"), Level.INFO, true)
-                .then()
-    }
-
-    private fun buildSender(session: WebSocketSession): Pair<Flux<WebSocketMessage>, FluxSink<WebSocketMessage>> {
-        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(1000)
-        val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.BUFFER)
-
-        val ping = wsProducer.sendPing(session).subscribe { sink.next(it) }
-        val hello = wsProducer.sendHello(session).subscribe { sink.next(it) }
-        val flood = wsProducer.sendFlood(session).subscribe { sink.next(it) }
-
-        val emitter = emitterProcessor
-                .doFinally {
-                    ping.dispose()
-                    hello.dispose()
-                    flood.dispose()
-                }
-                .log(Loggers.getLogger("emitter"), Level.INFO, true)
-        return Pair(emitter, sink)
-    }
-
-    private fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
+    fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
             : Flux<WebSocketMessage> = session.receive()
             .log(Loggers.getLogger("receiver"), Level.INFO, true, *SignalType.values().filter { it != SignalType.ON_NEXT }.toTypedArray())
             .doOnNext { message ->
@@ -86,12 +44,6 @@ class WsConsumer(
 
     private fun handleBinaryMessage(session: WebSocketSession, message: WebSocketMessage) {
         messagesCountInSecond.incrementAndGet()
-    }
-
-    @PreDestroy
-    private fun stop() {
-        subscription.dispose()
-        messageCountLogger.dispose()
     }
 
 }
