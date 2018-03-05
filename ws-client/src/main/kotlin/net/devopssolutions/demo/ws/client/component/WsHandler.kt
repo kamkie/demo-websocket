@@ -5,11 +5,14 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.socket.WebSocketSession
 import org.springframework.web.reactive.socket.client.WebSocketClient
 import reactor.core.publisher.Mono
+import reactor.core.publisher.SignalType
 import reactor.util.Loggers
 import java.net.URI
 import java.time.Duration
 import java.util.logging.Level
 import javax.annotation.PreDestroy
+
+val excludeOnNext = SignalType.values().filter { it != SignalType.ON_NEXT }.toTypedArray()
 
 @Component
 class WsHandler(

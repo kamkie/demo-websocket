@@ -6,12 +6,10 @@ import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
 import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
-import reactor.core.publisher.SignalType
 import reactor.util.Loggers
 import java.util.concurrent.atomic.AtomicLong
 import java.util.logging.Level
 
-val excludeOnNext = SignalType.values().filter { it != SignalType.ON_NEXT }.toTypedArray()
 
 @Component
 class WsConsumer {

@@ -48,18 +48,16 @@ class WsProducer(
         return Flux.interval(Duration.ofSeconds(5), Duration.ofSeconds(10))
                 .map { helloMessage(it) }
                 .map { message -> buildMessage(session, message) }
-                .doOnError { logger.warn("error", it) }
                 .doOnNext { logger.info("sending new hello message") }
-                .log(Loggers.getLogger("sendHello"), Level.INFO, true)
+                .log(Loggers.getLogger("sendHello"), Level.INFO, true, *excludeOnNext)
     }
 
     fun sendFlood(session: WebSocketSession): Flux<WebSocketMessage> {
         return Flux.interval(Duration.ofSeconds(10), Duration.ofSeconds(30))
                 .map { floodMessage() }
                 .map { message -> buildMessage(session, message) }
-                .doOnError { logger.warn("error", it) }
                 .doOnNext { logger.info("sending new flood message") }
-                .log(Loggers.getLogger("sendFlood"), Level.INFO, true)
+                .log(Loggers.getLogger("sendFlood"), Level.INFO, true, *excludeOnNext)
     }
 
     fun sendPing(session: WebSocketSession): Flux<WebSocketMessage> {
