@@ -47,7 +47,7 @@ class WsProducer(
     fun sendHello(session: WebSocketSession): Flux<WebSocketMessage> {
         return Flux.interval(Duration.ofSeconds(5), Duration.ofSeconds(10))
                 .map { helloMessage(it) }
-                .map { message -> buildMessage(session, message) }
+                .map { message -> buildTextMessage(session, message) }
                 .doOnNext { logger.info("sending new hello message") }
                 .log(Loggers.getLogger("sendHello"), Level.INFO, true, *excludeOnNext)
     }
@@ -55,7 +55,7 @@ class WsProducer(
     fun sendFlood(session: WebSocketSession): Flux<WebSocketMessage> {
         return Flux.interval(Duration.ofSeconds(10), Duration.ofSeconds(30))
                 .map { floodMessage() }
-                .map { message -> buildMessage(session, message) }
+                .map { message -> buildBinaryMessage(session, message) }
                 .doOnNext { logger.info("sending new flood message") }
                 .log(Loggers.getLogger("sendFlood"), Level.INFO, true, *excludeOnNext)
     }
@@ -91,11 +91,14 @@ class WsProducer(
             type = RpcType.REQUEST,
             params = 1_000_000)
 
-    private fun buildMessage(session: WebSocketSession, message: RpcMessage<*, Unit>): WebSocketMessage =
+    private fun buildBinaryMessage(session: WebSocketSession, message: RpcMessage<*, Unit>): WebSocketMessage =
             session.binaryMessage {
                 val buffer = it.allocateBuffer()
                 objectMapper.writeValue(GZIPOutputStream(buffer.asOutputStream()), message)
                 buffer
             }
+
+    private fun buildTextMessage(session: WebSocketSession, message: RpcMessage<*, Unit>): WebSocketMessage =
+            session.textMessage(objectMapper.writeValueAsString(message))
 
 }
