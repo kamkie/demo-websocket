@@ -58,9 +58,6 @@ subprojects {
             mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
         }
         dependencies {
-            dependency("org.springframework.boot:spring-boot-starter-web:$springBootVersion") {
-                exclude("org.springframework.boot:spring-boot-starter-tomcat")
-            }
             dependency("io.github.microutils:kotlin-logging:1.5.3")
         }
     }
@@ -93,6 +90,8 @@ project(":ws-client") {
 //        compile("org.springframework.boot:spring-boot-devtools")
         compile("org.springframework.boot:spring-boot-configuration-processor")
         compile("com.fasterxml.jackson.module:jackson-module-kotlin")
+        compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+        compile("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     }
 
     tasks {
@@ -110,17 +109,14 @@ project(":ws-server") {
     dependencies {
         compile(project(":ws-models"))
 
-        compile("org.springframework.boot:spring-boot-starter-web") {
-            exclude("org.springframework.boot:spring-boot-starter-tomcat")
-        }
-        compile("org.springframework.boot:spring-boot-starter-undertow")
-        compile("org.springframework.boot:spring-boot-starter-websocket")
+        compile("org.springframework.boot:spring-boot-starter-webflux")
         compile("org.springframework.boot:spring-boot-actuator")
 //        compile("org.springframework.boot:spring-boot-devtools")
         compile("org.springframework.boot:spring-boot-configuration-processor")
         compile("com.fasterxml.jackson.module:jackson-module-kotlin")
+        compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+        compile("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
 
-//        compile group: "org.xerial.snappy", name: "snappy-java", version: "1.1.7.1"
         compile("net.jpountz.lz4:lz4:1.3")
         compile("de.ruedigermoeller:fst:2.57")
     }

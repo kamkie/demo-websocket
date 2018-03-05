@@ -3,7 +3,6 @@ package net.devopssolutions.demo.ws.client.config
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
 
@@ -13,7 +12,7 @@ import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClien
 open class WebSocketConfig {
 
     @Bean
-    open fun objectMapper() = ObjectMapper()
+    open fun objectMapper() = ObjectMapper().findAndRegisterModules()
 
     @Bean
     open fun webSocketClient() = ReactorNettyWebSocketClient()

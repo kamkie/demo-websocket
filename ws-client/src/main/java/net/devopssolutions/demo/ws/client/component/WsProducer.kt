@@ -23,9 +23,11 @@ open class WsProducer(
 
 
     fun sendHello(session: WebSocketSession): Flux<WebSocketMessage> {
-        return Flux.interval(Duration.ofSeconds(0), Duration.ofSeconds(30))
+        return Flux.interval(Duration.ofSeconds(5), Duration.ofSeconds(10))
                 .map { helloMessage(it) }
                 .map { message -> buildMessage(session, message) }
+                .doOnError { logger.warn("error", it) }
+                .doOnNext { logger.info("sending new hello message") }
     }
 
     private fun helloMessage(number: Long): RpcMessage<String, Unit> = RpcMessage(
@@ -39,6 +41,8 @@ open class WsProducer(
         return Flux.interval(Duration.ofSeconds(10), Duration.ofSeconds(30))
                 .map { floodMessage(it) }
                 .map { message -> buildMessage(session, message) }
+                .doOnError { logger.warn("error", it) }
+                .doOnNext { logger.info("sending new flood message") }
     }
 
     private fun floodMessage(number: Long): RpcMessage<Int, Unit> = RpcMessage(

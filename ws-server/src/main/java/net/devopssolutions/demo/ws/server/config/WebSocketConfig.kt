@@ -1,30 +1,41 @@
 package net.devopssolutions.demo.ws.server.config
 
-import net.devopssolutions.demo.ws.server.component.WsServer
-import org.springframework.beans.factory.annotation.Autowired
+import com.fasterxml.jackson.databind.ObjectMapper
+import net.devopssolutions.demo.ws.server.handler.RootWebSocketHandler
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.socket.server.standard.ServerEndpointExporter
-import org.springframework.web.socket.server.standard.ServerEndpointRegistration
+import org.springframework.web.reactive.HandlerMapping
+import org.springframework.web.reactive.handler.SimpleUrlHandlerMapping
+import org.springframework.web.reactive.socket.WebSocketHandler
+import org.springframework.web.reactive.socket.server.WebSocketService
+import org.springframework.web.reactive.socket.server.support.HandshakeWebSocketService
+import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter
+import org.springframework.web.reactive.socket.server.upgrade.ReactorNettyRequestUpgradeStrategy
+import java.util.*
 
-import javax.servlet.ServletContext
-import javax.websocket.WebSocketContainer
 
 @Configuration
 open class WebSocketConfig {
 
     @Bean
-    open fun chatEndpointRegistration(wsServer: WsServer) = ServerEndpointRegistration("/ws", wsServer)
+    open fun objectMapper() = ObjectMapper().findAndRegisterModules()
 
     @Bean
-    open fun endpointExporter() = ServerEndpointExporter()
+    open fun handlerAdapter() = WebSocketHandlerAdapter(webSocketService())
 
-    @Autowired
-    private fun init(servletContext: ServletContext) {
-        val serverContainer = servletContext.getAttribute("javax.websocket.server.ServerContainer") as WebSocketContainer
-        serverContainer.defaultMaxBinaryMessageBufferSize = 100000000
-        serverContainer.defaultMaxTextMessageBufferSize = 1000000
-        serverContainer.defaultMaxSessionIdleTimeout = 10000
+    @Bean
+    open fun webSocketService(): WebSocketService = HandshakeWebSocketService(ReactorNettyRequestUpgradeStrategy())
+
+    @Bean
+    open fun handlerMapping(rootHandler: RootWebSocketHandler): HandlerMapping {
+        val map = HashMap<String, WebSocketHandler>()
+        map["/ws"] = rootHandler
+
+        val mapping = SimpleUrlHandlerMapping()
+        mapping.urlMap = map
+        mapping.order = -1 // before annotated controllers
+        return mapping
     }
 
 }
+

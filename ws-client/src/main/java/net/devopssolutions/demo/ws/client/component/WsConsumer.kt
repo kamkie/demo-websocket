@@ -10,8 +10,11 @@ import org.springframework.web.reactive.socket.client.WebSocketClient
 import reactor.core.Disposable
 import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Flux
+import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import java.net.URI
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 import javax.annotation.PreDestroy
@@ -45,10 +48,14 @@ open class WsConsumer(
     private fun handle(session: WebSocketSession): Mono<Void> {
         logger.info("opened ws connection session: {}, endpointConfig: {}", session, session.handshakeInfo)
 
-        val emitterProcessor = createSender(session)
+        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(1000, false)
+        val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.BUFFER)
+        buildPinger(session).subscribe { sink.next(it) }
+        wsProducer.sendHello(session).subscribe { sink.next(it) }
+        wsProducer.sendFlood(session).subscribe { sink.next(it) }
 
-        return session.send(emitterProcessor)
-                .mergeWith(createReceiver(session, emitterProcessor).then())
+        return session.send(emitterProcessor.subscribeOn(Schedulers.newParallel("foo", 4)))
+                .mergeWith(createReceiver(session, sink).subscribeOn(Schedulers.newParallel("bar", 4)).then())
                 .then()
                 .doOnError { exception -> afterConnectionClosed(session, CloseStatus.SERVER_ERROR, exception) }
                 .doOnSuccess { afterConnectionClosed(session, CloseStatus.GOING_AWAY) }
@@ -56,17 +63,15 @@ open class WsConsumer(
                     logger.warn("will close session")
                     session.close().block()
                 }
+                .doOnSubscribe { logger.info("starting {}", it) }
     }
 
-    private fun createReceiver(session: WebSocketSession, emitterProcessor: EmitterProcessor<WebSocketMessage>): Flux<WebSocketMessage> =
-            session.receive().doOnNext { message -> handleMessage(session, emitterProcessor, message) }
+    private fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
+            : Flux<WebSocketMessage> = session.receive().doOnNext { message -> handleMessage(session, sink, message) }
 
-    private fun createSender(session: WebSocketSession): EmitterProcessor<WebSocketMessage> {
-        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>()
-        wsProducer.sendFlood(session).subscribeWith(emitterProcessor)
-        wsProducer.sendHello(session).subscribeWith(emitterProcessor)
-        return emitterProcessor
-    }
+    private fun buildPinger(session: WebSocketSession): Flux<WebSocketMessage> = Flux.interval(Duration.ofSeconds(30))
+            .map { session.pingMessage { it.allocateBuffer(0) } }
+            .doOnNext { logger.info("sending ping") }
 
     private fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?, exception: Throwable? = null) {
         logger.info("ws connection closed, session: {}, closeReason: {}", session, closeStatus, exception)
@@ -74,17 +79,17 @@ open class WsConsumer(
 
     private fun handleMessage(
             session: WebSocketSession,
-            emitterProcessor: EmitterProcessor<WebSocketMessage>,
+            sink: FluxSink<WebSocketMessage>,
             message: WebSocketMessage) = when (message.type) {
-        WebSocketMessage.Type.PING -> handlePingMessage(session, emitterProcessor, message)
+        WebSocketMessage.Type.PING -> handlePingMessage(session, sink, message)
         WebSocketMessage.Type.TEXT -> handleTextMessage(session, message)
         WebSocketMessage.Type.BINARY -> handleBinaryMessage(session, message)
         WebSocketMessage.Type.PONG -> handlePongMessage(session, message)
     }
 
-    private fun handlePingMessage(session: WebSocketSession, emitterProcessor: EmitterProcessor<WebSocketMessage>, message: WebSocketMessage) {
+    private fun handlePingMessage(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, message: WebSocketMessage) {
         logger.info("incoming Ping: {} will respond with pong", message)
-        emitterProcessor.onNext(session.pongMessage { it.allocateBuffer(0) })
+        sink.next(session.pongMessage { it.allocateBuffer(0) })
     }
 
     private fun handlePongMessage(session: WebSocketSession, message: WebSocketMessage) {
@@ -92,14 +97,14 @@ open class WsConsumer(
     }
 
     private fun handleTextMessage(session: WebSocketSession, message: WebSocketMessage) {
-        logger.info("onTextMessage count: {}, message: {}", message.payload.readableByteCount(), message.payloadAsText)
+        logger.info("onTextMessage length: {}, message: {}", message.payload.readableByteCount(), message.payloadAsText)
     }
 
     private fun handleBinaryMessage(session: WebSocketSession, message: WebSocketMessage) {
         val count = messagesCount.incrementAndGet()
         messagesCountInSecond.incrementAndGet()
-        if (count % 50000 == 1L) {
-            logger.info("onBinaryMessage count: {}, message: {}", count, message)
+        if (count % 100_000 == 1L) {
+            logger.info("onBinaryMessage count: {}, message: {}, length: {}", count, message, message.payload.readableByteCount())
         }
     }
 
