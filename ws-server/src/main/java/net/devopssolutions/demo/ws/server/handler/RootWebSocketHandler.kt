@@ -14,14 +14,13 @@ import org.springframework.web.reactive.socket.CloseStatus
 import org.springframework.web.reactive.socket.WebSocketHandler
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
-import reactor.core.publisher.EmitterProcessor
-import reactor.core.publisher.Flux
-import reactor.core.publisher.FluxSink
-import reactor.core.publisher.Mono
+import reactor.core.publisher.*
 import reactor.core.scheduler.Schedulers
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.util.*
 import java.util.zip.GZIPInputStream
+import kotlin.math.pow
 
 
 @Component
@@ -31,14 +30,16 @@ class RootWebSocketHandler(
 ) : WebSocketHandler {
     companion object : KLogging()
 
+    private val staticPayload = UUID.randomUUID().toString().toByteArray(StandardCharsets.UTF_8)
+
     private val compressorLZ4Factory = LZ4Factory.fastestInstance()
     private val serializationConfig = FSTConfiguration.createDefaultConfiguration()
 
     override fun handle(session: WebSocketSession): Mono<Void> {
         logger.info("opened ws connection session: {}, endpointConfig: {}", session, session.handshakeInfo)
 
-        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(100_000, false)
-        val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.DROP)
+        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(1_000_000)
+        val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.IGNORE)
 //        buildPinger(session).subscribe { sink.next(it) }
 
         return session.send(emitterProcessor)
@@ -75,10 +76,17 @@ class RootWebSocketHandler(
             .doOnNext { logger.info("sending ping") }
 
     private fun writeToBuffer(value: RpcMessage<*, *>, dataBufferFactory: DataBufferFactory): DataBuffer {
-        val payload = serializationConfig.asSharedByteArray(value, IntArray(1))
-        val compressor = compressorLZ4Factory.fastCompressor()
-        val compress = compressor.compress(payload)
-        return dataBufferFactory.wrap(compress)
+//        val payload = serializationConfig.asByteArray(value)
+        return dataBufferFactory.wrap(staticPayload)
+
+//        val payload = serializationConfig.asSharedByteArray(value, IntArray(1))
+//        val compressor = compressorLZ4Factory.fastCompressor()
+//        val compress = compressor.compress(payload)
+//        return dataBufferFactory.wrap(compress)
+
+//        val allocateBuffer = dataBufferFactory.allocateBuffer()
+//        objectMapper.writeValue(allocateBuffer.asOutputStream(), value)
+//        return allocateBuffer
     }
 
     private fun afterConnectionClosed(session: WebSocketSession?, closeStatus: CloseStatus?, exception: Throwable? = null) {

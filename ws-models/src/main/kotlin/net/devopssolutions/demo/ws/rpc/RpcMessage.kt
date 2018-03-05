@@ -10,5 +10,4 @@ data class RpcMessage<I, O>(
         val params: I? = null,
         val response: O? = null,
         val rpcError: RpcError? = null,
-        val type: RpcType) : Serializable {
-}
+        val type: RpcType) : Serializable

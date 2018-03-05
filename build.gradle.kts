@@ -47,12 +47,12 @@ subprojects {
         plugin("org.jetbrains.kotlin.plugin.allopen")
         plugin("org.jetbrains.kotlin.plugin.spring")
         plugin("com.github.ben-manes.versions")
-        plugin("com.gorylenko.gradle-git-properties")
+//        plugin("com.gorylenko.gradle-git-properties")
         plugin("io.spring.dependency-management")
     }
     java {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_1_9
+        targetCompatibility = JavaVersion.VERSION_1_9
     }
 
     dependencyManagement {
@@ -80,7 +80,7 @@ subprojects {
             }
         }
 
-        "generateGitProperties"().mustRunAfter("processResources")
+        "generateGitProperties"().dependsOn("processResources")
     }
 }
 
