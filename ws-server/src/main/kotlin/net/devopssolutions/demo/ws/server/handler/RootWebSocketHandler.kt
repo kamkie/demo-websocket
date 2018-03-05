@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 import reactor.core.publisher.SignalType
+import reactor.core.scheduler.Schedulers
 import reactor.util.Loggers
 import java.util.logging.Level
 import java.util.zip.GZIPInputStream
@@ -47,7 +48,7 @@ class RootWebSocketHandler(
     fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
             : Flux<WebSocketMessage> {
         return session.receive()
-                .log(Loggers.getLogger("receiver"), Level.INFO, true, *excludeOnNext)
+                .log(Loggers.getLogger("receiver"), Level.INFO, true, *excludeOnNextAndRequest)
                 .doOnNext { message ->
                     when (message.type) {
                         WebSocketMessage.Type.PING -> handlePingMessage(session, sink, message)
@@ -71,7 +72,7 @@ class RootWebSocketHandler(
         val payload = message.payloadAsText
         logger.info { "incoming TextMessage: $payload with length: ${message.payload.readableByteCount()} on session: $session, sink.isCancelled: ${sink.isCancelled}" }
         val decodedMessage = objectMapper.readValue<RpcMessage<Any, Any>>(payload)
-        rpcMethodDispatcher.dispatch(session, decodedMessage).subscribe { sink.next(it) }
+        sendResponse(session, decodedMessage, sink)
     }
 
     private fun handleBinaryMessage(session: WebSocketSession, sink: FluxSink<WebSocketMessage>, message: WebSocketMessage) {
@@ -79,6 +80,15 @@ class RootWebSocketHandler(
         val gzipInputStream = GZIPInputStream(message.payload.asInputStream())
         val decodedMessage = objectMapper.readValue<RpcMessage<Any, Any>>(gzipInputStream)
         logger.info { "incoming BinaryMessage with length: $readableByteCount on session: $session, sink.isCancelled: ${sink.isCancelled}, message: $decodedMessage" }
-        rpcMethodDispatcher.dispatch(session, decodedMessage).subscribe { sink.next(it) }
+        sendResponse(session, decodedMessage, sink)
+    }
+
+    val sch1 = Schedulers.newParallel("foo", 4)
+    val sch2 = Schedulers.newParallel("bar", 4)
+    private fun sendResponse(session: WebSocketSession, decodedMessage: RpcMessage<Any, Any>, sink: FluxSink<WebSocketMessage>) {
+        rpcMethodDispatcher.dispatch(session, decodedMessage)
+                .subscribeOn(sch1)
+                .publishOn(sch2)
+                .subscribe { sink.next(it) }
     }
 }

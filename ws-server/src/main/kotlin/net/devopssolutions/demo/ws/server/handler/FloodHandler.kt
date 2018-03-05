@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
 import reactor.core.publisher.Flux
-import reactor.core.scheduler.Schedulers
 import reactor.util.Loggers
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -23,13 +22,11 @@ class FloodHandler : RpcMethodHandler {
     companion object : KLogging()
 
     override fun handle(session: WebSocketSession, message: RpcMessage<Any, Any>): Flux<WebSocketMessage> {
-        @Suppress("UNCHECKED_CAST")
         return Flux.range(0, message.params as Int)
                 .doOnSubscribe { logger.info("preparing flood message: $message on session: ${session.id}") }
                 .map { number -> createRpcMessage(number.toString(), 20) }
                 .log(Loggers.getLogger("sendFlood"), Level.INFO, true, *excludeOnNextAndRequest)
                 .toBinaryMessage(session)
-                .subscribeOn(Schedulers.newParallel("foo", 8))
     }
 
     private fun createRpcMessage(id: String, size: Int): RpcMessage<Unit, String> = RpcMessage(

@@ -27,7 +27,7 @@ class WsProducer(
     companion object : KLogging()
 
     fun buildSender(session: WebSocketSession): Pair<Flux<WebSocketMessage>, FluxSink<WebSocketMessage>> {
-        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(1000)
+        val emitterProcessor = EmitterProcessor.create<WebSocketMessage>(100)
         val sink = emitterProcessor.sink(FluxSink.OverflowStrategy.BUFFER)
 
         val ping = sendPing(session).subscribe { sink.next(it) }
