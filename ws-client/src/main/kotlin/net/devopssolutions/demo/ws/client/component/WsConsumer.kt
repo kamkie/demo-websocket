@@ -20,7 +20,7 @@ class WsConsumer {
     fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
             : Flux<WebSocketMessage> {
         return session.receive()
-                .log(Loggers.getLogger("receiver"), Level.INFO, true, *excludeOnNext)
+                .log(Loggers.getLogger("receiver"), Level.INFO, true, *excludeOnNextAndRequest)
                 .doOnNext { message ->
                     when (message.type) {
                         WebSocketMessage.Type.PING -> handlePingMessage(session, sink, message)

@@ -49,7 +49,7 @@ class WsProducer(
                 .map { helloMessage(it) }
                 .map { message -> buildTextMessage(session, message) }
                 .doOnNext { logger.info("sending new hello message") }
-                .log(Loggers.getLogger("sendHello"), Level.INFO, true, *excludeOnNext)
+                .log(Loggers.getLogger("sendHello"), Level.INFO, true, *excludeOnNextAndRequest)
     }
 
     fun sendFlood(session: WebSocketSession): Flux<WebSocketMessage> {
@@ -57,7 +57,7 @@ class WsProducer(
                 .map { floodMessage() }
                 .map { message -> buildBinaryMessage(session, message) }
                 .doOnNext { logger.info("sending new flood message") }
-                .log(Loggers.getLogger("sendFlood"), Level.INFO, true, *excludeOnNext)
+                .log(Loggers.getLogger("sendFlood"), Level.INFO, true, *excludeOnNextAndRequest)
     }
 
     fun sendPing(session: WebSocketSession): Flux<WebSocketMessage> {

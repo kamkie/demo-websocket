@@ -12,7 +12,10 @@ import java.time.Duration
 import java.util.logging.Level
 import javax.annotation.PreDestroy
 
-val excludeOnNext = SignalType.values().filter { it != SignalType.ON_NEXT }.toTypedArray()
+val excludeOnNextAndRequest = SignalType.values().asSequence()
+        .minus(SignalType.REQUEST)
+        .minus(SignalType.ON_NEXT)
+        .toList().toTypedArray()
 
 @Component
 class WsHandler(

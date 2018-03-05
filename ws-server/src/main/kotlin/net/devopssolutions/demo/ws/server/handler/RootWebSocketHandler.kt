@@ -16,10 +16,10 @@ import reactor.core.publisher.Mono
 import reactor.core.publisher.SignalType
 import reactor.core.scheduler.Schedulers
 import reactor.util.Loggers
+import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Level
 import java.util.zip.GZIPInputStream
 
-val excludeOnNext = SignalType.values().filter { it != SignalType.ON_NEXT }.toTypedArray()
 val excludeOnNextAndRequest = SignalType.values().asSequence()
         .minus(SignalType.REQUEST)
         .minus(SignalType.ON_NEXT)
@@ -33,16 +33,19 @@ class RootWebSocketHandler(
 ) : WebSocketHandler {
     companion object : KLogging()
 
+    val sessions = ConcurrentHashMap<String, Pair<WebSocketSession, FluxSink<WebSocketMessage>>>()
 
     override fun handle(session: WebSocketSession): Mono<Void> {
         logger.info("opened ws connection session: {}, endpointConfig: {}", session, session.handshakeInfo)
 
         val (emitter, sink) = wsProducers.buildSender(session)
+        sessions[session.id] = session to sink
 
         return session.send(emitter)
                 .mergeWith(createReceiver(session, sink).then())
                 .log(Loggers.getLogger("session"), Level.INFO, true)
                 .then()
+                .doFinally { sessions.remove(session.id) }
     }
 
     fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
