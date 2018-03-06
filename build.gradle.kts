@@ -14,7 +14,7 @@ plugins {
     id("org.springframework.boot").version("2.0.0.RELEASE").apply(false)
     id("com.palantir.git-version").version("0.10.1")
     id("io.spring.dependency-management").version("1.0.4.RELEASE")
-    id("com.gorylenko.gradle-git-properties").version("1.4.2")
+    id("com.gorylenko.gradle-git-properties").version("1.4.21")
     id("com.github.ben-manes.versions").version("0.17.0")
 }
 
@@ -47,7 +47,7 @@ subprojects {
         plugin("org.jetbrains.kotlin.plugin.allopen")
         plugin("org.jetbrains.kotlin.plugin.spring")
         plugin("com.github.ben-manes.versions")
-//        plugin("com.gorylenko.gradle-git-properties")
+        plugin("com.gorylenko.gradle-git-properties")
         plugin("io.spring.dependency-management")
     }
     java {
