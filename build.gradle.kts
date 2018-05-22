@@ -7,13 +7,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 plugins {
-    val kotlinVersion = "1.2.30"
+    val kotlinVersion = "1.2.41"
     kotlin("jvm").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.spring").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
-    id("org.springframework.boot").version("2.0.0.RELEASE").apply(false)
-    id("com.palantir.git-version").version("0.10.1")
-    id("io.spring.dependency-management").version("1.0.4.RELEASE")
+    id("org.springframework.boot").version("2.0.2.RELEASE").apply(false)
+    id("com.palantir.git-version").version("0.12.0-rc2")
+    id("io.spring.dependency-management").version("1.0.5.RELEASE")
     id("com.gorylenko.gradle-git-properties").version("1.4.21")
     id("com.github.ben-manes.versions").version("0.17.0")
 }
@@ -51,8 +51,8 @@ subprojects {
         plugin("io.spring.dependency-management")
     }
     java {
-        sourceCompatibility = JavaVersion.VERSION_1_9
-        targetCompatibility = JavaVersion.VERSION_1_9
+        sourceCompatibility = JavaVersion.VERSION_1_10
+        targetCompatibility = JavaVersion.VERSION_1_10
     }
 
     dependencyManagement {
@@ -60,7 +60,7 @@ subprojects {
             mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
         }
         dependencies {
-            dependency("io.github.microutils:kotlin-logging:1.5.3")
+            dependency("io.github.microutils:kotlin-logging:1.5.4")
         }
     }
 
@@ -138,7 +138,7 @@ project(":ws-server") {
 
 tasks {
     "wrapper"(type = Wrapper::class) {
-        gradleVersion = "4.6"
+        gradleVersion = "4.7"
         distributionType = org.gradle.api.tasks.wrapper.Wrapper.DistributionType.ALL
     }
 }
