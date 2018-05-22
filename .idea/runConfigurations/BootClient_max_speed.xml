@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BootClient max speed" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" singleton="false">
+    <module name="ws-client_main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="net.devopssolutions.demo.ws.client.BootClient" />
+    <option name="ENABLE_LAUNCH_OPTIMIZATION" value="false" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

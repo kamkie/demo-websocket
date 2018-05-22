@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BootServer fast start" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="ws-server_main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="net.devopssolutions.demo.ws.server.BootServer" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

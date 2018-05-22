@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BootServer max speed" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="ws-server_main" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="net.devopssolutions.demo.ws.server.BootServer" />
+    <option name="ENABLE_LAUNCH_OPTIMIZATION" value="false" />
+    <option name="VM_PARAMETERS" value="-XX:MetaspaceSize=96m -XX:+UseG1GC -XX:MaxGCPauseMillis=20 -XX:InitiatingHeapOccupancyPercent=35 -XX:G1HeapRegionSize=16M -XX:MinMetaspaceFreeRatio=50 -XX:MaxMetaspaceFreeRatio=80 -Xms4g" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
