@@ -1,4 +1,5 @@
 import groovy.lang.Closure
+import org.gradle.api.internal.FeaturePreviews.Feature.withName
 import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.kotlin
@@ -7,16 +8,18 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 plugins {
-    val kotlinVersion = "1.2.41"
+    val kotlinVersion = "1.3.0"
     kotlin("jvm").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.spring").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
-    id("org.springframework.boot").version("2.0.2.RELEASE").apply(false)
+    id("org.springframework.boot").version("2.1.0.RELEASE").apply(false)
     id("com.palantir.git-version").version("0.12.0-rc2")
-    id("io.spring.dependency-management").version("1.0.5.RELEASE")
-    id("com.gorylenko.gradle-git-properties").version("1.4.21")
-    id("com.github.ben-manes.versions").version("0.17.0")
+    id("io.spring.dependency-management").version("1.0.6.RELEASE")
+    id("com.gorylenko.gradle-git-properties").version("2.0.0-beta1")
+    id("com.github.ben-manes.versions").version("0.20.0")
 }
+
+val javaVersion = JavaVersion.VERSION_11
 
 val kotlinVersion: String? by extra {
     buildscript.configurations["classpath"]
@@ -51,8 +54,8 @@ subprojects {
         plugin("io.spring.dependency-management")
     }
     java {
-        sourceCompatibility = JavaVersion.VERSION_1_10
-        targetCompatibility = JavaVersion.VERSION_1_10
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
     }
 
     dependencyManagement {
@@ -60,7 +63,9 @@ subprojects {
             mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
         }
         dependencies {
-            dependency("io.github.microutils:kotlin-logging:1.5.4")
+            dependency("io.github.microutils:kotlin-logging:1.6.10")
+            dependency("net.jpountz.lz4:lz4:1.3")
+            dependency("de.ruedigermoeller:fst:2.57")
         }
     }
 
@@ -80,7 +85,7 @@ subprojects {
             }
         }
 
-        "generateGitProperties"().dependsOn("processResources")
+        getByName("generateGitProperties").dependsOn("processResources")
     }
 }
 
@@ -101,10 +106,8 @@ project(":ws-client") {
         compile("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     }
 
-    tasks {
-        "bootRun"(type = JavaExec::class) {
-            systemProperty("spring.output.ansi.enabled", "always")
-        }
+    tasks.getByName<JavaExec>("bootRun") {
+        systemProperty("spring.output.ansi.enabled", "always")
     }
 }
 
@@ -124,21 +127,17 @@ project(":ws-server") {
         compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
         compile("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
 
-        compile("net.jpountz.lz4:lz4:1.3")
-        compile("de.ruedigermoeller:fst:2.57")
+        compile("net.jpountz.lz4:lz4")
+        compile("de.ruedigermoeller:fst")
     }
 
 
-    tasks {
-        "bootRun"(type = JavaExec::class) {
-            systemProperty("spring.output.ansi.enabled", "always")
-        }
+    tasks.getByName<JavaExec>("bootRun") {
+        systemProperty("spring.output.ansi.enabled", "always")
     }
 }
 
-tasks {
-    "wrapper"(type = Wrapper::class) {
-        gradleVersion = "4.7"
-        distributionType = org.gradle.api.tasks.wrapper.Wrapper.DistributionType.ALL
-    }
+tasks.getByName<Wrapper>("wrapper") {
+    gradleVersion = "4.10.2"
+    distributionType = Wrapper.DistributionType.ALL
 }

@@ -18,7 +18,7 @@ import java.util.*
 class WebSocketConfig {
 
     @Bean
-    fun objectMapper() = ObjectMapper().findAndRegisterModules()
+    fun objectMapper(): ObjectMapper = ObjectMapper().findAndRegisterModules()
 
     @Bean
     fun handlerAdapter() = WebSocketHandlerAdapter(webSocketService())

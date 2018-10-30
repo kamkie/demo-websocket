@@ -10,7 +10,7 @@ import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClien
 class WebSocketConfig {
 
     @Bean
-    fun objectMapper() = ObjectMapper().findAndRegisterModules()
+    fun objectMapper(): ObjectMapper = ObjectMapper().findAndRegisterModules()
 
     @Bean
     fun webSocketClient() = ReactorNettyWebSocketClient()

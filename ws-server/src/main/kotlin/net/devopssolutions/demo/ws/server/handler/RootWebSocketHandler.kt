@@ -14,7 +14,6 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 import reactor.core.publisher.SignalType
-import reactor.core.scheduler.Schedulers
 import reactor.util.Loggers
 import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Level
@@ -48,8 +47,7 @@ class RootWebSocketHandler(
                 .doFinally { sessions.remove(session.id) }
     }
 
-    fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>)
-            : Flux<WebSocketMessage> {
+    fun createReceiver(session: WebSocketSession, sink: FluxSink<WebSocketMessage>): Flux<WebSocketMessage> {
         return session.receive()
                 .log(Loggers.getLogger("receiver"), Level.INFO, true, *excludeOnNextAndRequest)
                 .doOnNext { message ->
@@ -86,12 +84,8 @@ class RootWebSocketHandler(
         sendResponse(session, decodedMessage, sink)
     }
 
-    val sch1 = Schedulers.newParallel("foo", 4)
-    val sch2 = Schedulers.newParallel("bar", 4)
     private fun sendResponse(session: WebSocketSession, decodedMessage: RpcMessage<Any, Any>, sink: FluxSink<WebSocketMessage>) {
         rpcMethodDispatcher.dispatch(session, decodedMessage)
-                .subscribeOn(sch1)
-                .publishOn(sch2)
                 .subscribe { sink.next(it) }
     }
 }

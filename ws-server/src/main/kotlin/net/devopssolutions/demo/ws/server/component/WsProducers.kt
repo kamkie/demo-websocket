@@ -15,15 +15,11 @@ import reactor.core.publisher.EmitterProcessor
 import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
-import reactor.core.scheduler.Schedulers
 import reactor.util.Loggers
 import java.util.logging.Level
 
 private val compressorLZ4Factory = LZ4Factory.fastestInstance()
 private val serializationConfig = FSTConfiguration.createDefaultConfiguration()
-private val objectMapper = ObjectMapper().findAndRegisterModules()
-
-val sch3 = Schedulers.newParallel("baz", 4)
 
 fun <I, O> Flux<RpcMessage<I, O>>.toBinaryMessage(session: WebSocketSession): Flux<WebSocketMessage> {
     return this.flatMap { message ->
@@ -31,8 +27,7 @@ fun <I, O> Flux<RpcMessage<I, O>>.toBinaryMessage(session: WebSocketSession): Fl
             session.binaryMessage { dataBufferFactory ->
                 serializeToBuffer(message, dataBufferFactory)
             }
-        }.subscribeOn(sch3)
-
+        }
     }
 }
 
@@ -43,12 +38,9 @@ fun <I, O> Flux<RpcMessage<I, O>>.toTextMessage(session: WebSocketSession, objec
 }
 
 private fun serializeToBuffer(value: RpcMessage<*, *>, dataBufferFactory: DataBufferFactory): DataBuffer {
-//    return dataBufferFactory.wrap(objectMapper.writeValueAsBytes(value))
-
-    val payload = serializationConfig.asSharedByteArray(value, IntArray(1))
-    val compressor = compressorLZ4Factory.fastCompressor()
-    val compress = compressor.compress(payload)
-    return dataBufferFactory.wrap(compress)
+    val serializedSize = IntArray(1)
+    val serialized = serializationConfig.asSharedByteArray(value, serializedSize)
+    return dataBufferFactory.wrap(compressorLZ4Factory.fastCompressor().compress(serialized, 0, serializedSize[0]))
 }
 
 @Component

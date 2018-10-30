@@ -89,7 +89,7 @@ class WsProducer(
             created = LocalDateTime.now(ZoneOffset.UTC),
             method = RpcMethods.FLOOD.method,
             type = RpcType.REQUEST,
-            params = 1_000_000)
+            params = 10_000_000)
 
     private fun buildBinaryMessage(session: WebSocketSession, message: RpcMessage<*, Unit>): WebSocketMessage =
             session.binaryMessage {
