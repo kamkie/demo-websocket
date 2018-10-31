@@ -14,13 +14,12 @@ plugins {
     id("org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
     id("org.springframework.boot").version("2.1.0.RELEASE").apply(false)
     id("com.palantir.git-version").version("0.12.0-rc2")
-    id("io.spring.dependency-management").version("1.0.6.RELEASE")
     id("com.gorylenko.gradle-git-properties").version("2.0.0-beta1")
     id("com.github.ben-manes.versions").version("0.20.0")
 }
 
+val projectGitVersion: String = (project.ext["gitVersion"] as Closure<*>)() as String
 val javaVersion = JavaVersion.VERSION_11
-
 val kotlinVersion: String? by extra {
     buildscript.configurations["classpath"]
             .resolvedConfiguration.firstLevelModuleDependencies
@@ -32,7 +31,9 @@ val springBootVersion: String? by extra {
             .resolvedConfiguration.firstLevelModuleDependencies
             .find { it.moduleName == "org.springframework.boot.gradle.plugin" }?.moduleVersion
 }
-val projectGitVersion: String = (project.ext["gitVersion"] as Closure<*>)() as String
+val kotlinLoggingVersion = "1.6.10"
+val lz4Version = "1.3"
+val fstVersion = "2.57"
 
 allprojects {
     group = "net.devopssolutions"
@@ -51,30 +52,21 @@ subprojects {
         plugin("org.jetbrains.kotlin.plugin.spring")
         plugin("com.github.ben-manes.versions")
         plugin("com.gorylenko.gradle-git-properties")
-        plugin("io.spring.dependency-management")
     }
     java {
         sourceCompatibility = javaVersion
         targetCompatibility = javaVersion
     }
 
-    dependencyManagement {
-        imports {
-            mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
-        }
-        dependencies {
-            dependency("io.github.microutils:kotlin-logging:1.6.10")
-            dependency("net.jpountz.lz4:lz4:1.3")
-            dependency("de.ruedigermoeller:fst:2.57")
-        }
-    }
-
     dependencies {
-        compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-        compile("org.jetbrains.kotlin:kotlin-reflect")
-        compile("io.github.microutils:kotlin-logging")
+        implementation(platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}"))
 
-        testCompile("junit:junit")
+
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+        implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+        implementation("io.github.microutils:kotlin-logging:${kotlinLoggingVersion}")
+
+        testImplementation("junit:junit")
     }
 
     tasks {
@@ -95,15 +87,15 @@ project(":ws-client") {
     }
 
     dependencies {
-        compile(project(":ws-models"))
+        implementation(project(":ws-models"))
 
-        compile("org.springframework.boot:spring-boot-starter-webflux")
-        compile("org.springframework.boot:spring-boot-actuator")
-//        compile("org.springframework.boot:spring-boot-devtools")
-        compile("org.springframework.boot:spring-boot-configuration-processor")
-        compile("com.fasterxml.jackson.module:jackson-module-kotlin")
-        compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
-        compile("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
+        implementation("org.springframework.boot:spring-boot-starter-webflux")
+        implementation("org.springframework.boot:spring-boot-actuator")
+//        implementation("org.springframework.boot:spring-boot-devtools")
+        implementation("org.springframework.boot:spring-boot-configuration-processor")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+        implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+        implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     }
 
     tasks.getByName<JavaExec>("bootRun") {
@@ -117,20 +109,19 @@ project(":ws-server") {
     }
 
     dependencies {
-        compile(project(":ws-models"))
+        implementation(project(":ws-models"))
 
-        compile("org.springframework.boot:spring-boot-starter-webflux")
-        compile("org.springframework.boot:spring-boot-actuator")
-//        compile("org.springframework.boot:spring-boot-devtools")
-        compile("org.springframework.boot:spring-boot-configuration-processor")
-        compile("com.fasterxml.jackson.module:jackson-module-kotlin")
-        compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
-        compile("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
+        implementation("org.springframework.boot:spring-boot-starter-webflux")
+        implementation("org.springframework.boot:spring-boot-actuator")
+//        implementation("org.springframework.boot:spring-boot-devtools")
+        implementation("org.springframework.boot:spring-boot-configuration-processor")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+        implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+        implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
 
-        compile("net.jpountz.lz4:lz4")
-        compile("de.ruedigermoeller:fst")
+        implementation("net.jpountz.lz4:lz4:${lz4Version}")
+        implementation("de.ruedigermoeller:fst:${fstVersion}")
     }
-
 
     tasks.getByName<JavaExec>("bootRun") {
         systemProperty("spring.output.ansi.enabled", "always")
@@ -138,6 +129,6 @@ project(":ws-server") {
 }
 
 tasks.getByName<Wrapper>("wrapper") {
-    gradleVersion = "4.10.2"
+    gradleVersion = "5.0-rc-1"
     distributionType = Wrapper.DistributionType.ALL
 }
