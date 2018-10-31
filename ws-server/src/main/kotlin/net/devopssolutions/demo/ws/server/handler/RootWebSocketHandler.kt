@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.FluxSink
 import reactor.core.publisher.Mono
 import reactor.core.publisher.SignalType
+import reactor.core.scheduler.Schedulers
 import reactor.util.Loggers
 import java.util.concurrent.ConcurrentHashMap
 import java.util.logging.Level
@@ -23,6 +24,8 @@ val excludeOnNextAndRequest = SignalType.values().asSequence()
         .minus(SignalType.REQUEST)
         .minus(SignalType.ON_NEXT)
         .toList().toTypedArray()
+val sch6 = Schedulers.newParallel("foobar", 10)
+val sch1 = Schedulers.newParallel("singleeee", 2)
 
 @Component
 class RootWebSocketHandler(
@@ -86,6 +89,8 @@ class RootWebSocketHandler(
 
     private fun sendResponse(session: WebSocketSession, decodedMessage: RpcMessage<Any, Any>, sink: FluxSink<WebSocketMessage>) {
         rpcMethodDispatcher.dispatch(session, decodedMessage)
+                .publishOn(sch6)
+                .subscribeOn(sch1)
                 .subscribe { sink.next(it) }
     }
 }

@@ -70,14 +70,14 @@ subprojects {
     }
 
     tasks {
-        withType(KotlinCompile::class.java) {
+        withType<KotlinCompile> {
             kotlinOptions {
                 jvmTarget = "1.8"
                 freeCompilerArgs = listOf("-Xjsr305=strict")
             }
         }
 
-        getByName("generateGitProperties").dependsOn("processResources")
+        getByName("processResources").dependsOn("generateGitProperties")
     }
 }
 
