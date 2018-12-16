@@ -8,11 +8,11 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 plugins {
-    val kotlinVersion = "1.3.0"
+    val kotlinVersion = "1.3.11"
     kotlin("jvm").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.spring").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
-    id("org.springframework.boot").version("2.1.0.RELEASE").apply(false)
+    id("org.springframework.boot").version("2.1.1.RELEASE").apply(false)
     id("com.palantir.git-version").version("0.12.0-rc2")
     id("com.gorylenko.gradle-git-properties").version("2.0.0-beta1")
     id("com.github.ben-manes.versions").version("0.20.0")
@@ -31,7 +31,7 @@ val springBootVersion: String? by extra {
             .resolvedConfiguration.firstLevelModuleDependencies
             .find { it.moduleName == "org.springframework.boot.gradle.plugin" }?.moduleVersion
 }
-val kotlinLoggingVersion = "1.6.10"
+val kotlinLoggingVersion = "1.6.22"
 val lz4Version = "1.3"
 val fstVersion = "2.57"
 
@@ -65,8 +65,6 @@ subprojects {
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
         implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
         implementation("io.github.microutils:kotlin-logging:${kotlinLoggingVersion}")
-
-        testImplementation("junit:junit")
     }
 
     tasks {
@@ -129,6 +127,6 @@ project(":ws-server") {
 }
 
 tasks.getByName<Wrapper>("wrapper") {
-    gradleVersion = "5.0-rc-1"
+    gradleVersion = "5.1-rc-1"
     distributionType = Wrapper.DistributionType.ALL
 }
