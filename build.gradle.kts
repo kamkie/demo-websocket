@@ -1,21 +1,17 @@
+
 import groovy.lang.Closure
-import org.gradle.api.internal.FeaturePreviews.Feature.withName
-import org.gradle.api.tasks.JavaExec
-import org.gradle.kotlin.dsl.apply
-import org.gradle.kotlin.dsl.kotlin
-import org.jetbrains.kotlin.config.CompilerConfigurationKey
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 
 plugins {
-    val kotlinVersion = "1.3.11"
+    val kotlinVersion = "1.3.21"
     kotlin("jvm").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.spring").version(kotlinVersion)
     id("org.jetbrains.kotlin.plugin.allopen").version(kotlinVersion)
-    id("org.springframework.boot").version("2.1.1.RELEASE").apply(false)
+    id("org.springframework.boot").version("2.1.3.RELEASE").apply(false)
     id("com.palantir.git-version").version("0.12.0-rc2")
-    id("com.gorylenko.gradle-git-properties").version("2.0.0-beta1")
-    id("com.github.ben-manes.versions").version("0.20.0")
+    id("com.gorylenko.gradle-git-properties").version("2.0.0")
+    id("com.github.ben-manes.versions").version("0.21.0")
 }
 
 val projectGitVersion: String = (project.ext["gitVersion"] as Closure<*>)() as String
@@ -31,7 +27,7 @@ val springBootVersion: String? by extra {
             .resolvedConfiguration.firstLevelModuleDependencies
             .find { it.moduleName == "org.springframework.boot.gradle.plugin" }?.moduleVersion
 }
-val kotlinLoggingVersion = "1.6.22"
+val kotlinLoggingVersion = "1.6.25"
 val lz4Version = "1.3"
 val fstVersion = "2.57"
 
@@ -127,6 +123,6 @@ project(":ws-server") {
 }
 
 tasks.getByName<Wrapper>("wrapper") {
-    gradleVersion = "5.1-rc-1"
+    gradleVersion = "5.3"
     distributionType = Wrapper.DistributionType.ALL
 }
